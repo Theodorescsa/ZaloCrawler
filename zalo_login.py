@@ -7,7 +7,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
+from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import NoSuchElementException
 
+from solve_captcha import solve_zalo_captcha
 
 ZALO_LOGIN_URL = "https://chat.zalo.me/"
 
@@ -159,28 +162,367 @@ class ZaloAPICapturer:
         print("✅ Chrome driver đã sẵn sàng & hook đã được cài đặt từ sớm")
 
     # ================== LOGIN FLOW ==================
+    def _switch_to_captcha_context(self) -> bool:
+        """
+        Switch vào context (default hoặc iframe) chứa captcha.
+        Return True nếu tìm được challenge-container, False nếu không.
+        """
+        self.driver.switch_to.default_content()
 
-    def login_manually(self) -> bool:
-        """Mở Zalo & cho user đăng nhập thủ công."""
-        print("🔐 Đang mở trang đăng nhập Zalo...")
+        def _has_captcha_in_current():
+            try:
+                self.driver.find_element(
+                    By.CSS_SELECTOR,
+                    "div.challenge-container"
+                )
+                return True
+            except NoSuchElementException:
+                return False
+
+        # 1) Thử ngay ở default_content
+        if _has_captcha_in_current():
+            return True
+
+        # 2) Thử lần lượt các iframe
+        iframes = self.driver.find_elements(By.TAG_NAME, "iframe")
+        for frame in iframes:
+            try:
+                self.driver.switch_to.default_content()
+                self.driver.switch_to.frame(frame)
+                if _has_captcha_in_current():
+                    print("✅ Đã tìm thấy captcha trong một iframe")
+                    return True
+            except Exception:
+                continue
+
+        # 3) Không có -> về lại default_content và trả False
+        self.driver.switch_to.default_content()
+        print("⚠️ Không tìm thấy challenge-container trong bất kỳ context nào")
+        return False
+    def click_captcha_tiles(self, solved_result: str):
+        """
+        Click vào các ô captcha theo kết quả giải (ví dụ: '1,2,8')
+        """
+        try:
+            print(f"🖱️ Đang click vào các ô captcha: {solved_result}")
+
+            # Parse kết quả
+            tiles_to_click = [
+                int(x.strip())
+                for x in str(solved_result).split(",")
+                if x.strip()
+            ]
+            print(f"📋 Danh sách ô cần click: {tiles_to_click}")
+
+            # Switch vào context chứa captcha
+            if not self._switch_to_captcha_context():
+                print("❌ Không tìm thấy context chứa captcha")
+                return False
+
+            wait = WebDriverWait(self.driver, 10)
+
+            # DÙNG SELECTOR ỔN ĐỊNH, KHÔNG DÙNG CLASS HASHED
+            table = wait.until(
+                EC.presence_of_element_located(
+                    (By.CSS_SELECTOR, "div.challenge-container table")
+                )
+            )
+
+            tiles = table.find_elements(By.TAG_NAME, "td")
+            print(f"🔍 Tìm thấy {len(tiles)} ô captcha")
+
+            if len(tiles) == 0:
+                print("❌ Không tìm thấy ô nào trong bảng captcha")
+                return False
+
+            # Click từng ô
+            for tile_number in tiles_to_click:
+                if 1 <= tile_number <= len(tiles):
+                    tile_index = tile_number - 1
+                    tile_el = tiles[tile_index]
+
+                    print(f"👉 Đang click ô số {tile_number} (index {tile_index})")
+
+                    self.driver.execute_script(
+                        "arguments[0].scrollIntoView({block: 'center'});",
+                        tile_el
+                    )
+                    time.sleep(0.3)
+
+                    # Click vào div bên trong td cho chắc cú
+                    try:
+                        inner_div = tile_el.find_element(By.TAG_NAME, "div")
+                    except Exception:
+                        inner_div = tile_el
+
+                    self.driver.execute_script("arguments[0].click();", inner_div)
+
+                    print(f"✅ Đã click ô {tile_number}")
+                    time.sleep(0.7)
+                else:
+                    print(f"❌ Số ô {tile_number} vượt ngoài phạm vi (1-{len(tiles)})")
+
+            print("🎯 Đã click xong tất cả các ô captcha")
+
+            # Sau khi xong phải click nút Xác thực trong cùng context luôn
+            self._click_verify_button()
+
+            # Về lại default_content cho an toàn
+            self.driver.switch_to.default_content()
+
+            return True
+
+        except Exception as e:
+            print(f"❌ Lỗi khi click captcha tiles: {e}")
+            import traceback
+            traceback.print_exc()
+            try:
+                self.driver.switch_to.default_content()
+            except Exception:
+                pass
+            return False
+
+    def _click_verify_button(self):
+        """
+        Click nút 'Xác thực' sau khi chọn xong các ô captcha.
+        """
+        try:
+            print("🔍 Đang tìm nút 'Xác thực'...")
+
+            # Đảm bảo đang ở đúng context captcha
+            if not self._switch_to_captcha_context():
+                print("⚠️ Không tìm được context captcha khi click nút 'Xác thực'")
+                return False
+
+            wait = WebDriverWait(self.driver, 10)
+
+            verify_btn = wait.until(
+                EC.element_to_be_clickable((
+                    By.XPATH,
+                    "//div[contains(@class,'challenge-container')]"
+                    "//div[contains(@class,'z_36Na4oyq__e141')]"
+                ))
+            )
+
+            self.driver.execute_script("arguments[0].click();", verify_btn)
+            print("✅ Đã click nút 'Xác thực'")
+            time.sleep(3)
+
+            # Về lại default_content
+            self.driver.switch_to.default_content()
+            return True
+
+        except TimeoutException:
+            print("⚠️ Không tìm thấy nút 'Xác thực', có thể captcha auto submit.")
+            try:
+                self.driver.switch_to.default_content()
+            except Exception:
+                pass
+            return False
+        except Exception as e:
+            print(f"❌ Lỗi khi click nút xác thực: {e}")
+            try:
+                self.driver.switch_to.default_content()
+            except Exception:
+                pass
+            return False
+
+    def get_captcha_info(self) -> dict:
+        """
+        Tìm thông tin captcha (câu hỏi + URL ảnh) nếu có.
+        Có xử lý trường hợp captcha nằm trong iframe.
+        """
+        info = {
+            'question': None,
+            'image_url': None,
+            'exists': False
+        }
+
+        try:
+            wait = WebDriverWait(self.driver, 10)
+
+            # 1) Luôn về default_content trước
+            self.driver.switch_to.default_content()
+
+            # 2) Thử tìm trực tiếp ngoài cùng trước
+            def _find_in_current_context():
+                try:
+                    question_el = self.driver.find_element(
+                        By.XPATH,
+                        # tìm theo container + text "Chọn tất cả hình ảnh có"
+                        "//div[contains(@class, 'challenge-container')]"
+                        "//div[contains(text(), 'Chọn tất cả hình ảnh có')]"
+                    )
+                    img_el = self.driver.find_element(
+                        By.XPATH,
+                        "//div[contains(@class, 'challenge-container')]//img"
+                    )
+                    return question_el, img_el
+                except Exception:
+                    return None, None
+
+            q_el, img_el = _find_in_current_context()
+
+            # 3) Nếu chưa thấy, thử đi qua từng iframe
+            if not q_el or not img_el:
+                iframes = self.driver.find_elements(By.TAG_NAME, "iframe")
+                for frame in iframes:
+                    try:
+                        self.driver.switch_to.default_content()
+                        self.driver.switch_to.frame(frame)
+                        q_el, img_el = _find_in_current_context()
+                        if q_el and img_el:
+                            break
+                    except Exception:
+                        continue
+
+            # Sau khi thử xong, nếu vẫn không có → coi như không tồn tại
+            if not q_el or not img_el:
+                self.driver.switch_to.default_content()
+                return info
+
+            # 4) Lấy text câu hỏi + src ảnh
+            question = q_el.text.strip()
+            image_url = img_el.get_attribute("src")
+
+            # Về lại default_content
+            self.driver.switch_to.default_content()
+
+            info['question'] = question
+            info['image_url'] = image_url
+            info['exists'] = True
+
+            print(f"🎯 Captcha detected: {question} | {image_url}")
+            return info
+
+        except Exception as e:
+            print(f"❌ Lỗi khi lấy thông tin captcha: {e}")
+            try:
+                self.driver.switch_to.default_content()
+            except Exception:
+                pass
+            return info
+
+
+    def find_to_login_with_account(self):
+        """Click vào menu 'Đăng nhập với mật khẩu' ở màn QR login."""
+        print("🔍 Đang tìm nút 'Đăng nhập với mật khẩu' ở màn QR...")
+        wait = WebDriverWait(self.driver, 20)
+
+        try:
+            # 1) Nút 3 gạch (dropdown)
+            dropdown_btn = wait.until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, "div.zdropdown button"))
+            )
+            dropdown_btn.click()
+
+            # 2) Option 'Đăng nhập với mật khẩu' trong dropdown
+            password_option = wait.until(
+                EC.element_to_be_clickable((
+                    By.XPATH,
+                    "//div[contains(@class,'zdropdown-container')]"
+                    "//span[contains(normalize-space(text()), 'Đăng nhập với mật khẩu')]"
+                ))
+            )
+            password_option.click()
+            print("✅ Đã chuyển sang form đăng nhập bằng mật khẩu.")
+        except TimeoutException:
+            print("⚠️ Không tìm được menu 'Đăng nhập với mật khẩu'.")
+            print("   Có thể Zalo đang hiển thị sẵn form mật khẩu hoặc giao diện đã đổi.")
+    def login_with_password(self, phone: str, password: str) -> bool:
+        """
+        Mở chat.zalo.me, chọn 'Đăng nhập với mật khẩu',
+        tự động điền SĐT + mật khẩu và bấm nút Đăng nhập.
+        Trả về thông tin captcha nếu xuất hiện.
+        """
+        print("🔐 Đang mở trang đăng nhập Zalo (password mode)...")
         self.driver.get(ZALO_LOGIN_URL)
 
-        # Chờ body để chắc là page đã load cơ bản
-        WebDriverWait(self.driver, 20).until(
-            EC.presence_of_element_located((By.TAG_NAME, "body"))
-        )
+        wait = WebDriverWait(self.driver, 20)
 
-        print("=" * 60)
-        print("🤔 VUI LÒNG ĐĂNG NHẬP THỦ CÔNG")
-        print("📝 Các bước:")
-        print("   1. Nhập số điện thoại / mật khẩu hoặc quét QR")
-        print("   2. Hoàn thành xác thực nếu có")
-        print("   3. Chờ vào được giao diện chat")
-        print("   4. QUAY LẠI TERMINAL VÀ NHẤN ENTER")
-        print("=" * 60)
+        # Chờ body để chắc ăn trang đã load
+        wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
 
-        input("⏰ Sau khi đăng nhập thành công, nhấn Enter để tiếp tục...")
-        return True
+        # B1: Chuyển từ QR sang form mật khẩu (nếu cần)
+        try:
+            self.find_to_login_with_account()
+        except Exception as e:
+            print(f"⚠️ Lỗi khi chuyển sang form mật khẩu: {e}")
+
+        # B2: Chờ form hiện ra
+        try:
+            phone_input = wait.until(
+                EC.visibility_of_element_located((By.ID, "input-phone"))
+            )
+            password_input = wait.until(
+                EC.visibility_of_element_located((By.CSS_SELECTOR, ".form-signin input[type='password']"))
+            )
+        except TimeoutException:
+            print("❌ Không tìm thấy form đăng nhập (input SĐT / mật khẩu).")
+            return False
+
+        # B3: Điền thông tin
+        print("✏️ Đang điền SĐT và mật khẩu...")
+        phone_input.clear()
+        phone_input.send_keys(phone)
+
+        password_input.clear()
+        password_input.send_keys(password)
+
+        # B4: Chờ nút 'Đăng nhập với mật khẩu' hết disabled
+        def _login_btn_ready(driver):
+            try:
+                btn = driver.find_element(
+                    By.CSS_SELECTOR,
+                    ".form-signin .btn.btn--m.block.first"
+                )
+                classes = (btn.get_attribute("class") or "").lower()
+                # Nếu class không còn 'disabled' và element enable → ok
+                return "disabled" not in classes and btn.is_enabled()
+            except Exception:
+                return False
+
+        try:
+            wait.until(_login_btn_ready)
+            login_btn = self.driver.find_element(
+                By.CSS_SELECTOR,
+                ".form-signin .btn.btn--m.block.first"
+            )
+            login_btn.click()
+            print("✅ Đã click nút 'Đăng nhập với mật khẩu'.")
+        except TimeoutException:
+            print("❌ Nút đăng nhập vẫn bị disabled, kiểm tra lại SĐT/mật khẩu/logic validate.")
+            return False
+
+        # B5: Kiểm tra captcha sau khi click login
+        print("🔍 Đang kiểm tra captcha...")
+        time.sleep(3)  # Chờ một chút để captcha load nếu có
+        
+        captcha_info = self.get_captcha_info()
+        if captcha_info['exists']:
+            print(f"🎯 Đã phát hiện captcha!")
+            print(f"   Câu hỏi: {captcha_info['question']}")
+            print(f"   URL ảnh: {captcha_info['image_url']}")
+            # Có thể xử lý captcha ở đây hoặc trả về thông tin
+            return captcha_info
+
+        # B6: (Optional) Chờ vào được giao diện chat
+        try:
+            WebDriverWait(self.driver, 30).until(
+                EC.presence_of_element_located(
+                    (By.CSS_SELECTOR, "div[role='main'], .conversation-list, .sidebar")
+                )
+            )
+            print("🎉 Đã login thành công (đã thấy giao diện chat).")
+        except TimeoutException:
+            print("⚠️ Không detect được giao diện chat, nhưng request login đã được gửi.")
+            # Kiểm tra lại captcha (có thể captcha xuất hiện muộn)
+            captcha_info = self.get_captcha_info()
+            if captcha_info['exists']:
+                print(f"🎯 Đã phát hiện captcha (xuất hiện muộn)!")
+                print(f"   Câu hỏi: {captcha_info['question']}")
+                print(f"   URL ảnh: {captcha_info['image_url']}")
+                return captcha_info
 
     # ================== LẤY DATA HOOK ==================
 
@@ -309,16 +651,45 @@ def main():
     print("=" * 50)
 
     capturer = ZaloAPICapturer(headless=False)
+    PHONE = "0354235270"
+    PASSWORD = "@Dinhthai2004-"
 
     try:
-        if capturer.login_manually():
-            api_data = capturer.capture_login_info()
-            if api_data:
-                capturer.save_to_file(api_data)
-                print("\n🎉 HOÀN TẤT!")
-                print("Thông tin API đã được lưu vào file 'zalo_api_data.json'")
+        info_captcha_result = capturer.login_with_password(PHONE, PASSWORD)
+        if not info_captcha_result:
+            print("❌ Lỗi khi đăng nhập")
+            return
+        
+        print("info_captcha_result:", info_captcha_result)
+        
+        solved_captcha_result = solve_zalo_captcha(
+            api_key="6faef718e1c982aa9a263efb748c95e7",
+            image_base64_or_url=info_captcha_result["image_url"],
+            instructions=info_captcha_result["question"],
+            click_mode="zalo2",   # hoặc "zalo"
+            poll_interval=5,
+            timeout=120
+        )
+        # solved_captcha_result = "1,2,3,4,5,6,7,8,9"
+        print("Kết quả giải captcha:", solved_captcha_result)
+        
+        # THÊM PHẦN NÀY: Click vào các ô captcha
+        if solved_captcha_result:
+            print("🖱️ Đang thực hiện click captcha...")
+            click_success = capturer.click_captcha_tiles(solved_captcha_result)
+            
+            if click_success:
+                print("✅ Đã xử lý captcha thành công")
+                # Chờ một lúc để trang xử lý
+                time.sleep(5)
             else:
-                print("❌ Không thể lấy thông tin API")
+                print("❌ Lỗi khi xử lý captcha")
+                return
+        
+        # Tiếp tục lấy thông tin login
+        data = capturer.capture_login_info()
+        capturer.save_to_file(data)
+        
     except Exception as e:
         print(f"❌ Lỗi: {e}")
         import traceback
@@ -326,7 +697,6 @@ def main():
     finally:
         input("⏰ Nhấn Enter để đóng trình duyệt...")
         capturer.close()
-
 
 if __name__ == "__main__":
     main()
