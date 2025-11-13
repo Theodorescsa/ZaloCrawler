@@ -1,5 +1,7 @@
 import json
 import time
+import socket
+import subprocess
 from urllib.parse import urlparse, parse_qs
 
 from selenium import webdriver
@@ -13,6 +15,10 @@ from selenium.common.exceptions import NoSuchElementException
 from solve_captcha import solve_zalo_captcha
 
 ZALO_LOGIN_URL = "https://chat.zalo.me/"
+CHROME_PATH   = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+USER_DATA_DIR = r"E:\NCS\Userdata"       # thư mục user data (chứa các Profile)
+PROFILE_NAME  = "Profile 5"              # ví dụ: "Profile 5", "Default"
+REMOTE_PORT   = 9222                     # khác với port bạn dùng ở crawler để khỏi đụng nhau
 
 
 class ZaloAPICapturer:
@@ -125,34 +131,50 @@ class ZaloAPICapturer:
             console.log('✅ [HOOK] Script hook Zalo đã inject (new document)');
         })();
         """
-
+    def _wait_port(self,host: str, port: int, timeout: float = 15.0, poll: float = 0.1) -> bool:
+        end = time.time() + timeout
+        while time.time() < end:
+            try:
+                with socket.create_connection((host, port), timeout=1):
+                    return True
+            except Exception:
+                time.sleep(poll)
+        return False
     def setup_driver(self):
-        """Thiết lập Chrome driver + inject hook từ lúc new document."""
-        print("🚀 Đang khởi tạo Chrome driver...")
+        args = [
+            CHROME_PATH,
+            f'--remote-debugging-port={REMOTE_PORT}',
+            f'--user-data-dir={USER_DATA_DIR}',
+            f'--profile-directory={PROFILE_NAME}',
+            '--no-first-run',
+            '--no-default-browser-check',
+            '--disable-background-networking',
+            '--disable-popup-blocking',
+            '--disable-default-apps',
+            '--disable-infobars',
+            '--window-size=1280,900',
+            # KHÔNG nên dùng --headless nếu muốn tương tác UI
+            # Cân nhắc có thực sự cần --disable-extensions hay không
+        ]
 
-        chrome_options = Options()
-        if self.headless:
-            chrome_options.add_argument("--headless=new")
+        subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-        chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
-        chrome_options.add_experimental_option("useAutomationExtension", False)
-        chrome_options.add_argument(
-            "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/117.0.0.0 Safari/537.36"
-        )
+        # ❗️FIX: không truyền self vào đây
+        if not self._wait_port('127.0.0.1', REMOTE_PORT, timeout=20):
+            raise RuntimeError(f"Chrome remote debugging port {REMOTE_PORT} not available.")
 
-        self.driver = webdriver.Chrome(options=chrome_options)
+        options = Options()
+        options.add_experimental_option("debuggerAddress", f"127.0.0.1:{REMOTE_PORT}")
+
+        # ❗️FIX: gán vào self.driver
+        self.driver = webdriver.Chrome(options=options)
 
         # Ẩn navigator.webdriver
         self.driver.execute_script(
             "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
         )
 
-        # Inject hook TỪ LÚC NEW DOCUMENT (trước khi load Zalo)
+        # Inject hook TỪ LÚC NEW DOCUMENT
         hook_script = self._build_hook_script()
         self.driver.execute_cdp_cmd(
             "Page.addScriptToEvaluateOnNewDocument",
@@ -160,6 +182,7 @@ class ZaloAPICapturer:
         )
 
         print("✅ Chrome driver đã sẵn sàng & hook đã được cài đặt từ sớm")
+
 
     # ================== LOGIN FLOW ==================
     def _switch_to_captcha_context(self) -> bool:
@@ -663,14 +686,13 @@ def main():
         print("info_captcha_result:", info_captcha_result)
         
         solved_captcha_result = solve_zalo_captcha(
-            api_key="6faef718e1c982aa9a263efb748c95e7",
+            api_key="c95a3a78034782856d1ca3f4e221afc3",
             image_base64_or_url=info_captcha_result["image_url"],
             instructions=info_captcha_result["question"],
             click_mode="zalo2",   # hoặc "zalo"
             poll_interval=5,
             timeout=120
         )
-        # solved_captcha_result = "1,2,3,4,5,6,7,8,9"
         print("Kết quả giải captcha:", solved_captcha_result)
         
         # THÊM PHẦN NÀY: Click vào các ô captcha
@@ -685,6 +707,7 @@ def main():
             else:
                 print("❌ Lỗi khi xử lý captcha")
                 return
+        time.sleep(30)
         
         # Tiếp tục lấy thông tin login
         data = capturer.capture_login_info()
