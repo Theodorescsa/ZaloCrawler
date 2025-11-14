@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en" class="custom-scrollbars" data-beasties-container>
+<head>
+    <meta charset="utf-8">
+    <link rel="preconnect" href="https://pos.nvnstatic.net/" crossorigin>
+    <link rel="preconnect" href="https://pos.nvncdn.com/" crossorigin>
+
+    <title id="pageMetaTitle">Phần mềm quản lý bán hàng đa kênh tốt nhất, được sử dụng nhiều nhất - Nhanh.vn</title>
+    <base href="/">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" type="image/x-icon" href="https://pos.nvnstatic.net/assets/img/favicon.svg">
+    <link href="https://pos.nvnstatic.net/assets/css/font-inter.css?v=2" rel="stylesheet">
+    <link href="https://pos.nvnstatic.net/assets/fontawesome/all.min.css?v=1" rel="stylesheet">
+    <link href="https://pos.nvnstatic.net/assets/fontawesome/sharp-thin.css?v=1" rel="stylesheet">
+    <link href="https://pos.nvnstatic.net/assets/fontawesome/sharp-light.css?v=1" rel="stylesheet">
+    <link href="https://pos.nvnstatic.net/assets/fontawesome/sharp-regular.css?v=1" rel="stylesheet">
+    <link href="https://pos.nvnstatic.net/assets/fontawesome/sharp-solid.css?v=1" rel="stylesheet">
+    <link href="https://pos.nvnstatic.net/assets/fontawesome/sharp-duotone-solid.css?v=1" rel="stylesheet">
+    <link href="https://pos.nvnstatic.net/assets/css/all.min.css?v=2" rel="stylesheet" media="all">
+    <link href="https://pos.nvnstatic.net/assets/css/print.css?v=4" rel="stylesheet" media="print">
+    <link href="https://pos.nvnstatic.net/assets/css/override.css?v=7" rel="stylesheet">
+<style>:root{--footer-safe-area:0}:root{--mdc-theme-primary:#ccc;--text-size-tn:.9rem;--icon-font-family:"Font Awesome 6 Pro";--body-bg:#E2E6ED}:root{--indigo:#5C6BC0;--purple:#8e70c1;--pink:#f35c86;--teal:#26A69A;--yellow:#ffd648;--primary:#0c83ff;--secondary:#247297;--success:#059669;--info:#049aad;--warning:#f58646;--danger:#EF4444;--light:#F3F4F6;--dark:#252b36;--black:#000;--white:#fff;--indigo-rgb:92, 107, 192;--purple-rgb:142, 112, 193;--pink-rgb:243, 92, 134;--teal-rgb:38, 166, 154;--yellow-rgb:255, 214, 72;--primary-rgb:12, 131, 255;--secondary-rgb:36, 114, 151;--success-rgb:5, 150, 105;--info-rgb:4, 154, 173;--warning-rgb:245, 134, 70;--danger-rgb:239, 68, 68;--light-rgb:243, 244, 246;--dark-rgb:37, 43, 54;--black-rgb:0, 0, 0;--white-rgb:255, 255, 255;--bs-primary:rgb(var(--primary-rgb));--primary-color:#ffffff;--text-color:#1F2937;--sidebar-custom-bg:#F3F4F6;--sidebar-custom-color:#252b36;--theme-primary:#252b36;--theme-navbar-bg:var(--theme-primary);--theme-sidebar-bg:var(--sidebar-custom-bg);--theme-sidebar-color:var(--sidebar-custom-color)}@media print{body{width:100%!important;overflow:visible!important;display:block!important}}@media print{html *,html body *{white-space:normal!important}}html,body{height:100%}</style><link rel="stylesheet" href="https://pos.nvnstatic.net/app/styles-W4NS5TFC.css" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://pos.nvnstatic.net/app/styles-W4NS5TFC.css"></noscript><meta name="description" content="Đăng nhập ngay để dễ dàng quản lý đơn hàng, kho và doanh thu trên các kênh bán hàng"></head>
+<body>
+    <app-root></app-root>
+
+    <script src="https://pos.nvnstatic.net/assets/js/app.pos.js?v=2"></script>
+
+    <!-- Google Tag Manager + Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-5SRHFYM711"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-5SRHFYM711');
+    </script>
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+                new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+            j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+            'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-KTZHT7N');</script>
+    <!-- End Google Tag Manager + Google Analytics -->
+
+    <!-- Start - 1Push service -->
+    <div id="1push-root"></div>
+    <script>
+        var POSUserData = JSON.parse(window.localStorage.getItem('userData'));
+        if(typeof POSUserData != 'undefined'  && POSUserData !== null && typeof POSUserData.id !== 'undefined'){
+            var fcmToken = 'fcmTokenSentToServer_' + POSUserData.id;
+            const timestamp = Date.now();
+
+            // Nếu trước đó user đã cài đặt thông báo rồi mà tắt đi thì cũng cần xóa token hiện tại, khi user đặt lại nhận thông báo thì tạo lại token
+            if(Notification.permission === 'denied' && window.localStorage.getItem(fcmToken) ||
+                    Notification.permission === 'default' && window.localStorage.getItem(fcmToken))
+            {
+                window.localStorage.removeItem(fcmToken);
+            }
+
+            // Kiểm tra nếu chưa có token fcm thì mới chạy cài đặt cho nhẹ bớt khi tải trang
+            if(! window.localStorage.getItem(fcmToken)) {
+                var onePushAppUserId = POSUserData.id; // Biến sử dụng cho bên 1Push, không xóa biến này
+                (function (d, s, id) {
+                    var js, fjs = d.getElementsByTagName(s)[0];
+                    if (d.getElementById(id)) {
+                        return;
+                    }
+                    js = d.createElement(s);
+                    js.id = id;
+                    push_config = {appId: 20, userId: POSUserData.id}
+                    js.src = 'https://push.1app.vn/js/api/v1/sdk.js?v='+timestamp;
+                    fjs.parentNode.insertBefore(js, fjs.nextSibling);
+                }(document, 'script', 'push-jssdk'));
+            }
+        }
+    </script>
+    <!-- End - 1Push service -->
+
+<link rel="modulepreload" href="https://pos.nvnstatic.net/app/chunk-AKABF2RL.js"><link rel="modulepreload" href="https://pos.nvnstatic.net/app/chunk-57BN44CW.js"><link rel="modulepreload" href="https://pos.nvnstatic.net/app/chunk-RUHZY4E5.js"><link rel="modulepreload" href="https://pos.nvnstatic.net/app/chunk-WOYDY4KA.js"><link rel="modulepreload" href="https://pos.nvnstatic.net/app/chunk-KTALRTDX.js"><link rel="modulepreload" href="https://pos.nvnstatic.net/app/chunk-NM2XTKTG.js"><link rel="modulepreload" href="https://pos.nvnstatic.net/app/chunk-M54DUOIO.js"><link rel="modulepreload" href="https://pos.nvnstatic.net/app/chunk-NM2OXVFT.js"><link rel="modulepreload" href="https://pos.nvnstatic.net/app/chunk-MEZ2CMCW.js"><script src="https://pos.nvnstatic.net/app/polyfills-6PNSSGI2.js" type="module"></script><script src="https://pos.nvnstatic.net/app/main-GI7BGLSR.js" type="module"></script></body>
+</html>

@@ -16,9 +16,9 @@ from solve_captcha import solve_zalo_captcha
 
 ZALO_LOGIN_URL = "https://chat.zalo.me/"
 CHROME_PATH   = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
-USER_DATA_DIR = r"E:\NCS\Userdata"       # thư mục user data (chứa các Profile)
-PROFILE_NAME  = "Profile 5"              # ví dụ: "Profile 5", "Default"
-REMOTE_PORT   = 9222                     # khác với port bạn dùng ở crawler để khỏi đụng nhau
+USER_DATA_DIR = r"E:\NCS\Userdata"    
+PROFILE_NAME  = "Profile 5"         
+REMOTE_PORT   = 9222                   
 
 
 class ZaloAPICapturer:
@@ -28,7 +28,8 @@ class ZaloAPICapturer:
         self.setup_driver()
 
     # ================== SETUP & HOOK ==================
-
+    def find_to_zalo(self):
+        self.driver.get(ZALO_LOGIN_URL)
     def _build_hook_script(self) -> str:
         """
         Script JS sẽ được inject TỪ LÚC NEW DOCUMENT (trước khi trang Zalo chạy script của nó).
@@ -288,12 +289,12 @@ class ZaloAPICapturer:
             print("🎯 Đã click xong tất cả các ô captcha")
 
             # Sau khi xong phải click nút Xác thực trong cùng context luôn
-            self._click_verify_button()
+            status = self._click_verify_button()
 
             # Về lại default_content cho an toàn
             self.driver.switch_to.default_content()
 
-            return True
+            return status
 
         except Exception as e:
             print(f"❌ Lỗi khi click captcha tiles: {e}")
@@ -308,17 +309,22 @@ class ZaloAPICapturer:
     def _click_verify_button(self):
         """
         Click nút 'Xác thực' sau khi chọn xong các ô captcha.
+        Sau khi click, nếu captcha vẫn tồn tại → nghĩa là trả lời sai.
+        Trả về:
+            True  → click OK và captcha biến mất
+            False → click lỗi / captcha vẫn còn (fail)
         """
         try:
             print("🔍 Đang tìm nút 'Xác thực'...")
 
-            # Đảm bảo đang ở đúng context captcha
+            # Chuyển vào frame đúng
             if not self._switch_to_captcha_context():
                 print("⚠️ Không tìm được context captcha khi click nút 'Xác thực'")
                 return False
 
             wait = WebDriverWait(self.driver, 10)
 
+            # Tìm nút Xác thực
             verify_btn = wait.until(
                 EC.element_to_be_clickable((
                     By.XPATH,
@@ -329,26 +335,63 @@ class ZaloAPICapturer:
 
             self.driver.execute_script("arguments[0].click();", verify_btn)
             print("✅ Đã click nút 'Xác thực'")
-            time.sleep(3)
 
-            # Về lại default_content
+            time.sleep(2)  # đợi trang xử lý
+
+            # Sau khi click thì thoát khỏi frame
             self.driver.switch_to.default_content()
-            return True
+
+            # ================================
+            # 🔍 KIỂM TRA CAPTCHA CÒN KHÔNG
+            # ================================
+            time.sleep(1)
+
+            try:
+                # Nếu captcha vẫn hiển thị → solve sai
+                self.driver.switch_to.frame(
+                    self.driver.find_element(By.XPATH, "//iframe[contains(@src,'captcha')]")
+                )
+
+                # Nếu tìm thấy container captcha → vẫn còn
+                still_captcha = self.driver.find_elements(
+                    By.XPATH,
+                    "//div[contains(@class,'challenge-container')]"
+                )
+
+                if still_captcha:
+                    print("❌ Captcha vẫn còn sau khi xác thực → giải sai!")
+                    self.driver.switch_to.default_content()
+                    return False
+
+                # Không tìm thấy container, nghĩa là qua captcha
+                self.driver.switch_to.default_content()
+                print("🎉 Captcha đã biến mất → giải đúng!")
+                return True
+
+            except Exception:
+                # Nếu không tìm thấy iframe captcha, nghĩa là nó biến mất → OK
+                print("🎉 Không còn captcha → login thành công!")
+                try:
+                    self.driver.switch_to.default_content()
+                except:
+                    pass
+                return True
 
         except TimeoutException:
             print("⚠️ Không tìm thấy nút 'Xác thực', có thể captcha auto submit.")
             try:
                 self.driver.switch_to.default_content()
-            except Exception:
+            except:
                 pass
             return False
         except Exception as e:
             print(f"❌ Lỗi khi click nút xác thực: {e}")
             try:
                 self.driver.switch_to.default_content()
-            except Exception:
+            except:
                 pass
             return False
+
 
     def get_captcha_info(self) -> dict:
         """
@@ -425,6 +468,93 @@ class ZaloAPICapturer:
             except Exception:
                 pass
             return info
+
+    def logout(self, clear_history: bool = False) -> bool:
+        if not self.driver:
+            print("❌ Driver chưa được khởi tạo.")
+            return False
+
+        wait = WebDriverWait(self.driver, 20)
+
+        try:
+            # Đảm bảo đúng context
+            self.driver.switch_to.default_content()
+
+            # ===== 1) Click avatar =====
+            print("🔍 Đang tìm avatar để mở menu...")
+            avatar = wait.until(
+                EC.element_to_be_clickable(
+                    (By.CSS_SELECTOR, "div[idelement='avatar']")
+                )
+            )
+            self.driver.execute_script("arguments[0].click();", avatar)
+            print("✅ Đã click avatar, chờ menu hiện...")
+            time.sleep(2)
+            # ===== 2) Click item 'Đăng xuất' trong menu =====
+            logout_item = wait.until(
+                EC.element_to_be_clickable((
+                    By.XPATH,
+                    "//span[@data-translate-inner='STR_MENU_LOGOUT' or normalize-space(text())='Đăng xuất']"
+                    "/ancestor::*[contains(@class,'zmenu-item')]"
+                ))
+            )
+            self.driver.execute_script("arguments[0].click();", logout_item)
+            time.sleep(1)
+            print("✅ Đã click menu 'Đăng xuất', chờ modal xác nhận...")
+
+            # ===== 3) Xử lý modal xác nhận =====
+            try:
+                dialog = wait.until(
+                    EC.visibility_of_element_located((
+                        By.CSS_SELECTOR,
+                        "div.zl-modal__dialog"
+                    ))
+                )
+                print("🪟 Modal xác nhận logout đã hiện.")
+
+                # Tick "Xóa lịch sử trò chuyện khi đăng xuất" nếu cần
+                if clear_history:
+                    try:
+                        checkbox = dialog.find_element(
+                            By.CSS_SELECTOR,
+                            "div.z-checkbox"
+                        )
+                        self.driver.execute_script("arguments[0].click();", checkbox)
+                        print("🧹 Đã tick 'Xóa lịch sử trò chuyện khi đăng xuất'.")
+                    except Exception:
+                        print("⚠️ Không tick được checkbox 'Xóa lịch sử...', nhưng không nghiêm trọng.")
+
+                # Nút "Đăng xuất" trong modal: data-id="btn_Logout_Logout"
+                confirm_btn = dialog.find_element(
+                    By.CSS_SELECTOR,
+                    "div[data-id='btn_Logout_Logout']"
+                )
+                self.driver.execute_script("arguments[0].click();", confirm_btn)
+                print("✅ Đã click nút 'Đăng xuất' trong modal, chờ quay về màn login...")
+
+            except TimeoutException:
+                print("⚠️ Không thấy modal xác nhận, có thể Zalo đổi UI hoặc auto logout luôn.")
+
+            # ===== 4) (Optional) Chờ thấy màn đăng nhập =====
+            try:
+                WebDriverWait(self.driver, 20).until(
+                    EC.presence_of_element_located((
+                        By.CSS_SELECTOR,
+                        ".form-signin, #input-phone"
+                    ))
+                )
+                print("🎉 Logout thành công, đã quay về màn đăng nhập.")
+            except TimeoutException:
+                print("⚠️ Không detect được form login sau khi logout, nhưng đã gửi click 'Đăng xuất'.")
+
+            return True
+
+        except TimeoutException:
+            print("❌ Không tìm được avatar hoặc menu 'Đăng xuất'. Có thể UI Zalo thay đổi.")
+            return False
+        except Exception as e:
+            print(f"❌ Lỗi trong quá trình logout: {e}")
+            return False
 
 
     def find_to_login_with_account(self):
@@ -668,14 +798,9 @@ class ZaloAPICapturer:
             self.driver.quit()
             print("🔚 Đã đóng trình duyệt")
 
-
-def main():
+def zalo_login_main(capturer, PHONE, PASSWORD, API_KEY):
     print("🤖 BOT CHẶN API ZALO - GETLOGININFO")
     print("=" * 50)
-
-    capturer = ZaloAPICapturer(headless=False)
-    PHONE = "0354235270"
-    PASSWORD = "@Dinhthai2004-"
 
     try:
         info_captcha_result = capturer.login_with_password(PHONE, PASSWORD)
@@ -686,7 +811,7 @@ def main():
         print("info_captcha_result:", info_captcha_result)
         
         solved_captcha_result = solve_zalo_captcha(
-            api_key="c95a3a78034782856d1ca3f4e221afc3",
+            api_key=API_KEY,
             image_base64_or_url=info_captcha_result["image_url"],
             instructions=info_captcha_result["question"],
             click_mode="zalo2",   # hoặc "zalo"
@@ -695,31 +820,21 @@ def main():
         )
         print("Kết quả giải captcha:", solved_captcha_result)
         
-        # THÊM PHẦN NÀY: Click vào các ô captcha
         if solved_captcha_result:
             print("🖱️ Đang thực hiện click captcha...")
             click_success = capturer.click_captcha_tiles(solved_captcha_result)
             
             if click_success:
                 print("✅ Đã xử lý captcha thành công")
-                # Chờ một lúc để trang xử lý
                 time.sleep(5)
             else:
                 print("❌ Lỗi khi xử lý captcha")
-                return
-        time.sleep(30)
-        
-        # Tiếp tục lấy thông tin login
+                return        
         data = capturer.capture_login_info()
         capturer.save_to_file(data)
+        capturer.logout()
         
     except Exception as e:
         print(f"❌ Lỗi: {e}")
         import traceback
         traceback.print_exc()
-    finally:
-        input("⏰ Nhấn Enter để đóng trình duyệt...")
-        capturer.close()
-
-if __name__ == "__main__":
-    main()

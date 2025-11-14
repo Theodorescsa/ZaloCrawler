@@ -10,6 +10,9 @@ def encode_image_to_base64(image_path: str) -> str:
     with open(image_path, "rb") as f:
         return base64.b64encode(f.read()).decode("utf-8")
 
+import time
+import requests
+
 
 def solve_zalo_captcha(
     api_key: str,
@@ -20,12 +23,11 @@ def solve_zalo_captcha(
     timeout: int = 120          # tối đa chờ bao nhiêu giây
 ):
     """
-    Gửi ảnh captcha lên anticaptcha.top và trả về kết quả đã giải.
-    
-    Return:
-        - Nếu click_mode="zalo2": ví dụ "1,2,6,9"
-        - Nếu click_mode="zalo": ví dụ "coordinate:x=44,y=32;x=143,y=11"
+    Trả về:
+        - KẾT QUẢ captcha (request field từ anticaptcha.top) nếu thành công
+        - None nếu có lỗi / timeout / task fail
     """
+
     # 1. Tạo task
     create_url = "https://anticaptcha.top/in.php"
     create_payload = {
@@ -34,18 +36,25 @@ def solve_zalo_captcha(
         "textinstructions": instructions,
         "click": click_mode,
         "body": image_base64_or_url,  # base64 ảnh hoặc URL ảnh
-        "json": 1
+        "json": 1,
     }
 
-    resp = requests.post(create_url, json=create_payload, timeout=30)
-    resp.raise_for_status()
-    data = resp.json()
+    try:
+        resp = requests.post(create_url, json=create_payload, timeout=30)
+        resp.raise_for_status()
+        data = resp.json()
+    except Exception as e:
+        print(f"❌ Lỗi khi tạo task captcha (network/error): {e}")
+        return None
 
     if data.get("status") != 1:
-        raise RuntimeError(f"Tạo task thất bại: {data}")
+        print(f"❌ Tạo task captcha thất bại: {data}")
+        return None
 
     task_id = data.get("request")
-    # print("Created task id:", task_id)
+    if not task_id:
+        print(f"❌ Không nhận được task_id hợp lệ: {data}")
+        return None
 
     # 2. Poll kết quả
     result_url = "https://anticaptcha.top/res.php"
@@ -53,28 +62,38 @@ def solve_zalo_captcha(
 
     while True:
         if time.time() - start_time > timeout:
-            raise TimeoutError("Hết thời gian chờ kết quả captcha")
+            print("⏰ Hết thời gian chờ kết quả captcha")
+            return None
 
         params = {
             "key": api_key,
             "id": task_id,
-            "json": 1
+            "json": 1,
         }
-        r = requests.get(result_url, params=params, timeout=30)
-        r.raise_for_status()
-        res_data = r.json()
+
+        try:
+            r = requests.get(result_url, params=params, timeout=30)
+            r.raise_for_status()
+            res_data = r.json()
+        except Exception as e:
+            print(f"❌ Lỗi khi lấy kết quả captcha (network/error): {e}")
+            return None
 
         status = res_data.get("status")
-        if status == 0 and res_data.get("request") == "CAPCHA_NOT_READY":
+        req_val = res_data.get("request")
+
+        if status == 0 and req_val == "CAPCHA_NOT_READY":
             # đang xử lý, chờ thêm
             time.sleep(poll_interval)
             continue
         elif status == 1:
-            # thành công
-            return res_data.get("request")
+            # thành công → trả về phần "request"
+            return req_val
         else:
-            # lỗi khác
-            raise RuntimeError(f"Lỗi khi lấy kết quả: {res_data}")
+            # lỗi khác (BAD KEY, ERROR_CAPTCHA_UNSOLVABLE, ...)
+            print(f"❌ Lỗi khi lấy kết quả captcha: {res_data}")
+            return None
+
 
 if __name__ == "__main__":
     API_KEY = "6faef718e1c982aa9a263efb748c95e7"
