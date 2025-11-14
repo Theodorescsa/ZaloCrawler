@@ -1,6 +1,8 @@
 # ================== UTILS CƠ BẢN ==================
 import json
 from pathlib import Path
+import csv
+PHONE_CSV_PATH = Path("database/list_phones/listphones.csv")
 OUTPUT_DIR = Path("./zalo_output")
 OUTPUT_DIR.mkdir(exist_ok=True)
 def dict_to_cookie_string(cookies: dict) -> str:
@@ -56,3 +58,56 @@ def save_ndjson(record, filename: str, mode: str = "a"):
 
     print(f"💾 Đã ghi NDJSON vào: {path}")
 
+
+def load_phones_batch(limit: int = 29):
+    """
+    Đọc file CSV, lấy tối đa `limit` số chưa có status = done.
+    Trả về:
+      - rows: list toàn bộ dòng (để tí nữa ghi lại)
+      - indices: list index các dòng được chọn
+      - phones: list số điện thoại tương ứng
+    """
+    rows: list[dict] = []
+
+    with PHONE_CSV_PATH.open("r", newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            rows.append(row)
+
+    pending_indices: list[int] = []
+    phones: list[str] = []
+
+    for idx, row in enumerate(rows):
+        status = (row.get("status") or "").strip().lower()
+        # chỉ xử lý những dòng chưa done
+        if status == "done":
+            continue
+
+        phone = (row.get("phone") or row.get("mobile") or "").strip()
+        if not phone:
+            continue
+
+        phones.append(phone)
+        pending_indices.append(idx)
+
+        if len(phones) >= limit:
+            break
+
+    return rows, pending_indices, phones
+
+def save_status_back_to_csv(rows: list[dict]):
+    """
+    Ghi lại toàn bộ rows về file CSV, giữ header cũ.
+    """
+    if not rows:
+        return
+
+    fieldnames = list(rows[0].keys())
+    # Nếu file cũ chưa có cột status thì thêm vào
+    if "status" not in fieldnames:
+        fieldnames.append("status")
+
+    with PHONE_CSV_PATH.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)

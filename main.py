@@ -5,64 +5,41 @@ import time
 from pathlib import Path
 
 from solve_captcha import solve_zalo_captcha
-from utils import dict_to_cookie_string, pretty_print, save_json, save_ndjson
+from utils import dict_to_cookie_string, load_phones_batch, pretty_print, save_json, save_ndjson, save_status_back_to_csv
 from zalo_api_capturer import ZaloAPICapturer
 from zalo_crypto import ZaloCrypto
 from zalo_search_api import ZaloClient
-OUTPUT_DIR = Path("./zalo_output")
-OUTPUT_DIR.mkdir(exist_ok=True)
-list_phones = [
-    "84902598948",
-    "84913122373",
-    "84898453278",
-    "84913291442",
-    "84914297986",
-    "84931258867",
-    "84906358895",
-    "84778951299",
-    "84768872610",
-    "84946005002",
-    "84989200689",
-    "84337725686",
-    "84903156842",
-    "84979712349",
-    "84837307333",
-    "84373492225",
-    "84353595515",
-    "84904129992",
-    "84587266061",
-    "84912240880",
-    "84937707115",
-    "84944691010",
-    "84902671237",
-    "84903442958",
-    "84918458853",
-    "84708918860",
-    "84989702611",
-    "84327815158",
-    "84902282598"
-]
-def run_friend_apis(client: ZaloClient, phones: list[str]):
+
+def run_friend_apis(client: ZaloClient, phones: list[str]) -> dict[str, bool]:
     print("\n=== GỌI API FRIEND ===")
     print("SECRET_KEY_B64:", client.secret_key_b64)
 
+    results: dict[str, bool] = {}
+
     if not phones:
         print("⚠️ Không có số để query.")
-        return
+        return results
 
-    try:
-        for phone in phones:
+    for phone in phones:
+        try:
             print(f"\n📞 Query: {phone}")
             data = client.getUserByPhone(phone)
             pretty_print("Kết quả", data)
 
             record = data.get("result") or data.get("data") or {}
+
             if record:
                 record["phone"] = phone
                 save_ndjson(record, "friend_profiles.ndjson", mode="a")
+                results[phone] = True   # thành công
+            else:
+                results[phone] = False  # không có data
 
-    except Exception as e:
-        print(f"❌ Lỗi khi gọi API: {e}")
+        except Exception as e:
+            print(f"❌ Lỗi khi gọi API với {phone}: {e}")
+            results[phone] = False
+
+    return results
 
 # ================== LOGIN + CAPTCHA ==================
 def login_with_retry(
@@ -265,11 +242,24 @@ def main():
     PASSWORD = "Signethanoi123@"
     CAPTCHA_API_KEY = "c95a3a78034782856d1ca3f4e221afc3"
 
-    capturer = ZaloAPICapturer(headless=False)
+    capturer = ZaloAPICapturer(
+        headless=False,
+        remote_port=9222,
+        user_data_dir=r"E:\NCS\Userdata",
+        profile_name="Profile 5",
+    )
 
     while True:
         try:
-            # 1) LOGIN (tự solve captcha → nếu fail thì manual → retry 2 lần)
+            # 🔹 0) Load batch 29 số từ CSV
+            rows, indices, phones = load_phones_batch(limit=29)
+            if not phones:
+                print("✅ Không còn số nào cần xử lý trong CSV. Thoát.")
+                return
+
+            print(f"👉 Đang xử lý {len(phones)} số điện thoại từ CSV...")
+
+            # 1) LOGIN (tự solve captcha → nếu fail thì manual → retry 5 lần)
             ok = login_with_retry(
                 capturer,
                 phone=PHONE,
@@ -294,19 +284,34 @@ def main():
                 print("❌ Không tạo được ZaloClient từ login_info.")
                 return
 
-            # 4) Gọi API bạn bè
-            run_friend_apis(client, list_phones)
+            # 4) Gọi API bạn bè cho batch này
+            results = run_friend_apis(client, phones)
 
-            print("\n🎉 FLOW KẾT THÚC – XONG!")
+            # 5) Cập nhật status lại vào rows
+            for idx in indices:
+                phone_in_row = (rows[idx].get("phone") or rows[idx].get("mobile") or "").strip()
+                if not phone_in_row:
+                    continue
+
+                success = results.get(phone_in_row, False)
+                rows[idx]["status"] = "done"
+
+            # 6) Ghi lại CSV
+            save_status_back_to_csv(rows)
+
+            print("\n🎉 Batch xử lý xong, đã cập nhật status vào CSV.")
             time.sleep(3)
             capturer.logout()
             time.sleep(3)
+
+            # Nếu bạn muốn chỉ chạy 1 batch rồi dừng, thêm:
+            # break
 
         except Exception as e:
             print(f"❌ Lỗi trong main(): {e}")
             import traceback
             traceback.print_exc()
-
+            break
+        
 if __name__ == "__main__":
     main()
-    print("\n\n🎉 FLOW KẾT THÚC – XONG!")

@@ -9,41 +9,54 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
-from selenium.common.exceptions import TimeoutException
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 from solve_captcha import solve_zalo_captcha
 
 ZALO_LOGIN_URL = "https://chat.zalo.me/"
 CHROME_PATH   = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
-USER_DATA_DIR = r"E:\NCS\Userdata"    
-PROFILE_NAME  = "Profile 5"         
-REMOTE_PORT   = 9222                   
+USER_DATA_DIR = r"E:\NCS\Userdata"
+PROFILE_NAME  = "Profile 5"
+REMOTE_PORT   = 9222
 
 
 class ZaloAPICapturer:
-    def __init__(self, headless: bool = False):
+    def __init__(
+        self,
+        headless: bool = False,
+        # Nếu dùng MoreLogin / anti-detect: truyền debugger_address (vd: "127.0.0.1:55005")
+        debugger_address: str | None = None,
+        # Nếu vẫn muốn dùng Chrome thường: có thể override port / profile / user_data_dir
+        remote_port: int | None = None,
+        user_data_dir: str | None = None,
+        profile_name: str | None = None,
+    ):
         self.driver = None
         self.headless = headless
+
+        # Mode attach vào browser sẵn (MoreLogin, AdsPower, ...)
+        self.debugger_address = debugger_address
+
+        # Mode Chrome thường
+        self.remote_port = remote_port or REMOTE_PORT
+        self.user_data_dir = user_data_dir or USER_DATA_DIR
+        self.profile_name = profile_name or PROFILE_NAME
+
         self.setup_driver()
 
     # ================== SETUP & HOOK ==================
+
     def find_to_zalo(self):
         self.driver.get(ZALO_LOGIN_URL)
+
     def _build_hook_script(self) -> str:
-        """
-        Script JS sẽ được inject TỪ LÚC NEW DOCUMENT (trước khi trang Zalo chạy script của nó).
-        Hook cả fetch và XMLHttpRequest.
-        """
         return r"""
         (function() {
-            // Tránh inject nhiều lần
             if (window.__zaloHookInstalled) {
                 return;
             }
             window.__zaloHookInstalled = true;
 
-            // Nơi lưu các lần gọi API login
             window.__zaloLoginInfoList = [];
 
             function saveLoginInfo(url, data) {
@@ -108,7 +121,6 @@ class ZaloAPICapturer:
                     xhr.addEventListener('load', function() {
                         try {
                             if (xhr.__zaloUrl && xhr.__zaloUrl.includes('/api/login/getLoginInfo')) {
-                                // cố gắng parse JSON
                                 let data = null;
                                 try {
                                     data = JSON.parse(xhr.responseText);
@@ -132,7 +144,8 @@ class ZaloAPICapturer:
             console.log('✅ [HOOK] Script hook Zalo đã inject (new document)');
         })();
         """
-    def _wait_port(self,host: str, port: int, timeout: float = 15.0, poll: float = 0.1) -> bool:
+
+    def _wait_port(self, host: str, port: int, timeout: float = 15.0, poll: float = 0.1) -> bool:
         end = time.time() + timeout
         while time.time() < end:
             try:
@@ -141,49 +154,99 @@ class ZaloAPICapturer:
             except Exception:
                 time.sleep(poll)
         return False
+
     def setup_driver(self):
-        args = [
-            CHROME_PATH,
-            f'--remote-debugging-port={REMOTE_PORT}',
-            f'--user-data-dir={USER_DATA_DIR}',
-            f'--profile-directory={PROFILE_NAME}',
-            '--no-first-run',
-            '--no-default-browser-check',
-            '--disable-background-networking',
-            '--disable-popup-blocking',
-            '--disable-default-apps',
-            '--disable-infobars',
-            '--window-size=1280,900',
-            # KHÔNG nên dùng --headless nếu muốn tương tác UI
-            # Cân nhắc có thực sự cần --disable-extensions hay không
-        ]
-
-        subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-        # ❗️FIX: không truyền self vào đây
-        if not self._wait_port('127.0.0.1', REMOTE_PORT, timeout=20):
-            raise RuntimeError(f"Chrome remote debugging port {REMOTE_PORT} not available.")
-
         options = Options()
-        options.add_experimental_option("debuggerAddress", f"127.0.0.1:{REMOTE_PORT}")
 
-        # ❗️FIX: gán vào self.driver
-        self.driver = webdriver.Chrome(options=options)
+        # ==============================
+        # Cấu hình chung cho headless (nếu bật)
+        # ==============================
+        if self.headless:
+            # Headless mới của Chrome
+            options.add_argument("--headless=new")
+            options.add_argument("--disable-gpu")
+            options.add_argument("--window-size=1280,900")
+            # Hạn chế bị detect automation
+            options.add_argument("--disable-blink-features=AutomationControlled")
+            options.add_argument("--disable-background-timer-throttling")
+            options.add_argument("--disable-backgrounding-occluded-windows")
+            options.add_argument("--disable-renderer-backgrounding")
+            options.add_argument("--disable-features=CalculateNativeWinOcclusion")
 
-        # Ẩn navigator.webdriver
-        self.driver.execute_script(
-            "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
-        )
+        # ==============================
+        # MODE 1: Attach vào MoreLogin / anti-detect (đã chạy sẵn)
+        # ==============================
+        if self.debugger_address:
+            print(f"🔗 Đang attach vào browser sẵn tại: {self.debugger_address}")
+            options.debugger_address = self.debugger_address
+            # Lưu ý: headless ở mode này gần như vô nghĩa
+            self.driver = webdriver.Chrome(options=options)
 
-        # Inject hook TỪ LÚC NEW DOCUMENT
+        # ==============================
+        # MODE 2: Tự chạy Chrome thường (CHROME_PATH + USER_DATA_DIR + PROFILE_NAME)
+        # ==============================
+        else:
+            args = [
+                CHROME_PATH,
+                f'--remote-debugging-port={self.remote_port}',
+                f'--user-data-dir={self.user_data_dir}',
+                f'--profile-directory={self.profile_name}',
+                '--no-first-run',
+                '--no-default-browser-check',
+                '--disable-background-networking',
+                '--disable-popup-blocking',
+                '--disable-default-apps',
+                '--disable-infobars',
+                '--window-size=1280,900',
+
+                # ↓↓↓ thêm 4 cái này ↓↓↓
+                '--disable-background-timer-throttling',
+                '--disable-backgrounding-occluded-windows',
+                '--disable-renderer-backgrounding',
+                '--disable-features=CalculateNativeWinOcclusion',
+            ]
+
+
+            # Nếu muốn browser thật chạy headless luôn
+            if self.headless:
+                args.append("--headless=new")
+                args.append("--disable-gpu")
+
+            # Mở Chrome background
+            subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+            if not self._wait_port('127.0.0.1', self.remote_port, timeout=20):
+                raise RuntimeError(f"Chrome remote debugging port {self.remote_port} not available.")
+
+            options.add_experimental_option("debuggerAddress", f"127.0.0.1:{self.remote_port}")
+            self.driver = webdriver.Chrome(options=options)
+
+        try:
+            self.driver.execute_cdp_cmd(
+                "Page.addScriptToEvaluateOnNewDocument",
+                {
+                    "source": """
+                        try {
+                            Object.defineProperty(navigator, 'webdriver', {
+                                get: () => undefined,
+                            });
+                        } catch (e) {
+                            // Nếu property không cấu hình được thì bỏ qua, tránh crash
+                        }
+                    """
+                }
+            )
+        except Exception as e:
+            print("⚠️ Không patch được navigator.webdriver:", e)
+
+        # Inject hook từ new document (phần cũ của bạn)
         hook_script = self._build_hook_script()
         self.driver.execute_cdp_cmd(
             "Page.addScriptToEvaluateOnNewDocument",
             {"source": hook_script}
         )
 
-        print("✅ Chrome driver đã sẵn sàng & hook đã được cài đặt từ sớm")
-
+        print(f"✅ Chrome driver đã sẵn sàng (headless={self.headless}) & hook đã được cài đặt từ sớm")
 
     # ================== LOGIN FLOW ==================
     def _switch_to_captcha_context(self) -> bool:
