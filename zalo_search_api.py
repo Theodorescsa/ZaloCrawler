@@ -45,7 +45,7 @@ class ZaloClient:
         cookie_string: str,
         friend_domain: str = "https://tt-friend-wpa.chat.zalo.me",
         zpw_ver: str = "670",
-        zpw_type: str = "30",
+        zpw_type: str = "1000",
         user_agent: str = "Mozilla/5.0",
     ):
         self.secret_key_b64 = secret_key_b64
@@ -136,7 +136,9 @@ class ZaloClient:
 
         data_str = json.dumps(payload, ensure_ascii=False)
         enc = self.encodeAES(data_str)
-
+        print("Encrypted:",enc)
+        print("imei:",imei)
+        # input("Press Enter to continue...")
         url = f"{self.friend_domain}/api/friend/profile/get?{self._common_qs()}&params={quote(enc)}"
         resp = self._get(url)
         resp.raise_for_status()
@@ -174,6 +176,34 @@ class ZaloClient:
         enc = self.encodeAES(data_str)
 
         url = f"{self.friend_domain}/api/friend/profile/multiget?{self._common_qs()}&params={quote(enc)}"
+        resp = self._get(url)
+        resp.raise_for_status()
+        j = resp.json()
+
+        if j.get("error_code") != 0:
+            raise RuntimeError(f"API error: {j}")
+
+        plaintext = self.decodeAES(j["data"])
+        try:
+            return json.loads(plaintext)
+        except Exception:
+            return {"raw": plaintext}
+
+    def getRecommendedFriendsV2(self, imei: Optional[str] = None):
+        import uuid
+        
+        if imei is None:
+            imei = str(uuid.uuid4())
+
+        payload = {
+            "imei": imei
+        }
+        
+        data_str = json.dumps(payload, ensure_ascii=False)
+        enc = self.encodeAES(data_str)
+        
+        url = f"{self.friend_domain}/api/friend/recommendsv2/list?{self._common_qs()}&params={quote(enc)}"
+        
         resp = self._get(url)
         resp.raise_for_status()
         j = resp.json()

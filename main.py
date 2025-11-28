@@ -238,8 +238,8 @@ def main():
     print("🤖 ZALO FLOW – LOGIN (Selenium) → DECRYPT → CALL FRIEND APIs")
     print("=" * 80)
 
-    PHONE = "0923540924"
-    PASSWORD = "Signethanoi123@"
+    PHONE = ""
+    PASSWORD = ""
     CAPTCHA_API_KEY = "c95a3a78034782856d1ca3f4e221afc3"
 
     capturer = ZaloAPICapturer(
@@ -259,7 +259,7 @@ def main():
 
             print(f"👉 Đang xử lý {len(phones)} số điện thoại từ CSV...")
 
-            # 1) LOGIN (tự solve captcha → nếu fail thì manual → retry 5 lần)
+            # # 1) LOGIN (tự solve captcha → nếu fail thì manual → retry 5 lần)
             ok = login_with_retry(
                 capturer,
                 phone=PHONE,
@@ -271,7 +271,6 @@ def main():
             if not ok:
                 print("❌ Login thất bại hoàn toàn. Dừng.")
                 return
-
             # 2) Lấy login info
             login_info = capturer.capture_login_info()
             if not login_info:
