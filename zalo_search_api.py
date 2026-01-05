@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import base64, json, hashlib
+import base64, json, hashlib, time, uuid
 from urllib.parse import quote, unquote
 import requests
 from Crypto.Cipher import AES
@@ -44,22 +44,47 @@ class ZaloClient:
         secret_key_b64: str,
         cookie_string: str,
         friend_domain: str = "https://tt-friend-wpa.chat.zalo.me",
-        zpw_ver: str = "670",
-        zpw_type: str = "1000",
-        user_agent: str = "Mozilla/5.0",
+        chat_domain: str = "https://tt-chat2-wpa.chat.zalo.me",
+        group_domain: str = "https://tt-group-wpa.chat.zalo.me",
+        profile_domain: str = "https://tt-profile-wpa.chat.zalo.me", # <--- THÊM DÒNG NÀY
+        zpw_ver: str = "676", # Update theo log của bạn
+        zpw_type: str = "30",
+        user_agent: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
     ):
         self.secret_key_b64 = secret_key_b64
         self.cookie_string = cookie_string
         self.friend_domain = friend_domain.rstrip("/")
+        self.chat_domain = chat_domain.rstrip("/")
+        self.group_domain = group_domain.rstrip("/")
+        self.profile_domain = profile_domain.rstrip("/") # <--- THÊM DÒNG NÀY
         self.zpw_ver = zpw_ver
         self.zpw_type = zpw_type
         self.user_agent = user_agent
-
-        # cache key nếu muốn
         self._aes_key: Optional[bytes] = None
-
+    def _normalize_phone(self, phone: str) -> str:
+        """
+        Chuẩn hóa SĐT về định dạng Zalo yêu cầu (84xxxxxxxxx).
+        Loại bỏ ký tự lạ, đổi 0 đầu thành 84.
+        """
+        # 1. Chỉ giữ lại số (xóa dấu cách, dấu +, dấu -)
+        clean_phone = "".join(filter(str.isdigit, phone))
+        
+        # 2. Xử lý đầu số
+        if clean_phone.startswith("0"):
+            return "84" + clean_phone[1:]
+        
+        # Trường hợp user copy paste cả 84 sẵn thì giữ nguyên
+        return clean_phone
     # ---------- INTERNAL HELPERS ----------
+    def _get(self, url: str, params: Optional[Dict] = None, proxies: Optional[Dict] = None):
+            # CẬP NHẬT: Thêm tham số proxies
+            return requests.get(url, headers=self._headers(), params=params, timeout=30, proxies=proxies)
 
+    def _post(self, url: str, data: Optional[str] = None, params: Optional[Dict] = None, proxies: Optional[Dict] = None):
+        # CẬP NHẬT: Thêm tham số proxies
+        headers = self._headers()
+        headers["Content-Type"] = "application/x-www-form-urlencoded"
+        return requests.post(url, headers=headers, data=data, params=params, timeout=30, proxies=proxies)
     def _get_aes_key(self) -> bytes:
         if self._aes_key is not None:
             return self._aes_key
@@ -107,9 +132,14 @@ class ZaloClient:
     def _common_qs(self) -> str:
         return f"zpw_ver={self.zpw_ver}&zpw_type={self.zpw_type}"
 
-    def _get(self, url: str, params: Optional[Dict] = None):
-        return requests.get(url, headers=self._headers(), params=params, timeout=20)
-
+    def _get(self, url: str, params: Optional[Dict] = None, proxies: Optional[Dict] = None):
+        return requests.get(url, headers=self._headers(), params=params, timeout=30, proxies=proxies)
+    # Cập nhật lại hàm _post để nhận tham số proxies
+    def _post(self, url: str, data: Optional[str] = None, params: Optional[Dict] = None, proxies: Optional[Dict] = None):
+        headers = self._headers()
+        headers["Content-Type"] = "application/x-www-form-urlencoded"
+        # Truyền proxies vào requests.post
+        return requests.post(url, headers=headers, data=data, params=params, timeout=30, proxies=proxies)
     # ---------- PUBLIC API METHODS ----------
 
     def getUserByPhone(
@@ -119,9 +149,8 @@ class ZaloClient:
         avatar_size: int = 240,
         language: str = "vi",
         imei: Optional[str] = None,
+        proxies: Optional[Dict] = None # <--- Thêm tham số này
     ):
-        import uuid
-
         if imei is None:
             imei = str(uuid.uuid4())
 
@@ -136,15 +165,18 @@ class ZaloClient:
 
         data_str = json.dumps(payload, ensure_ascii=False)
         enc = self.encodeAES(data_str)
-        print("Encrypted:",enc)
-        print("imei:",imei)
-        # input("Press Enter to continue...")
+        
         url = f"{self.friend_domain}/api/friend/profile/get?{self._common_qs()}&params={quote(enc)}"
-        resp = self._get(url)
+        
+        # Truyền proxies vào đây
+        resp = self._get(url, proxies=proxies)
         resp.raise_for_status()
         j = resp.json()
 
         if j.get("error_code") != 0:
+            # Check lỗi rate limit cụ thể của Zalo (thường code -30, -366, hoặc text specific)
+            if j.get("error_code") in [-366, -30]: 
+                raise Exception(f"RATE_LIMITED: {j}")
             raise RuntimeError(f"API error: {j}")
 
         plaintext = self.decodeAES(j["data"])
@@ -152,7 +184,6 @@ class ZaloClient:
             return json.loads(plaintext)
         except Exception:
             return {"raw": plaintext}
-
     def getMultiUsersByPhones(
         self,
         phones,
@@ -190,8 +221,6 @@ class ZaloClient:
             return {"raw": plaintext}
 
     def getRecommendedFriendsV2(self, imei: Optional[str] = None):
-        import uuid
-        
         if imei is None:
             imei = str(uuid.uuid4())
 
@@ -216,3 +245,105 @@ class ZaloClient:
             return json.loads(plaintext)
         except Exception:
             return {"raw": plaintext}
+
+    def getProfilesV2(
+        self,
+        friend_pversion_map: list,
+        phonebook_version: int = 0,
+        avatar_size: int = 120,
+        language: str = "vi",
+        show_online_status: int = 1,
+        imei: Optional[str] = None,
+        proxies: Optional[Dict] = None
+    ):
+        """
+        Lấy thông tin profile bạn bè (V2) - API này thường dùng để check update profile.
+        
+        Args:
+            friend_pversion_map: List các string dạng "uid_version". 
+                                 Ví dụ: ["7538827358818806826_0"] (0 là lấy mới nhất).
+            phonebook_version: Version danh bạ (timestamp), có thể để 0 hoặc timestamp hiện tại.
+            avatar_size: Kích thước ảnh đại diện (default 120 theo log).
+            proxies: Dictionary proxy nếu có.
+        """
+        if imei is None:
+            imei = str(uuid.uuid4())
+
+        payload = {
+            "phonebook_version": phonebook_version,
+            "friend_pversion_map": friend_pversion_map,
+            "avatar_size": avatar_size,
+            "language": language,
+            "show_online_status": show_online_status,
+            "imei": imei
+        }
+
+        # 1. Mã hóa payload
+        data_str = json.dumps(payload, ensure_ascii=False)
+        enc = self.encodeAES(data_str)
+
+        # 2. Tạo body dạng x-www-form-urlencoded
+        # Lưu ý: POST request của Zalo thường gửi body là chuỗi params=...
+        body = f"params={quote(enc)}"
+
+        # 3. Tạo URL (Sử dụng profile_domain)
+        url = f"{self.profile_domain}/api/social/friend/getprofiles/v2?{self._common_qs()}"
+
+        # 4. Gửi request
+        # Hàm _post đã set sẵn Content-Type: application/x-www-form-urlencoded
+        resp = self._post(url, data=body, proxies=proxies)
+        resp.raise_for_status()
+        
+        j = resp.json()
+
+        if j.get("error_code") != 0:
+            if j.get("error_code") in [-366, -30]: 
+                 raise Exception(f"RATE_LIMITED: {j}")
+            raise RuntimeError(f"API error: {j}")
+
+        # 5. Giải mã response
+        if "data" in j:
+            plaintext = self.decodeAES(j["data"])
+            try:
+                return json.loads(plaintext)
+            except Exception:
+                return {"raw": plaintext}
+        return j
+
+    def sendSmartMessage(self, identifier: str, message: str):
+        target_uid = identifier
+
+        # --- BƯỚC 1: Xử lý Identifier ---
+        # Kiểm tra nếu là SĐT (chuỗi số < 15 ký tự)
+        is_phone = len(identifier) < 15 and identifier.isdigit()
+        
+        if is_phone:
+            # Tối ưu 1: Chuẩn hóa ngay lập tức (09x -> 849x) -> Bỏ qua được request lỗi
+            phone = self._normalize_phone(identifier)
+            print(f"[INFO] Input là SĐT. Đã chuẩn hóa: {identifier} -> {phone}")
+            
+            try:
+                # Chỉ gọi 1 lần duy nhất với số đã chuẩn
+                info_obj = self.getUserByPhone(phone)
+                data = info_obj.get("data", {})
+                
+                # Extract UID (hỗ trợ cả uid và userId)
+                extracted_uid = data.get("uid") or data.get("userId")
+                
+                if extracted_uid:
+                    target_uid = extracted_uid
+                    name = data.get("display_name") or data.get("zaloName") or "Unknown"
+                    print(f"[SUCCESS] Tìm thấy UID: {target_uid} ({name})")
+                else:
+                    return {
+                        "error_code": -1, 
+                        "error_message": f"Không tìm thấy Zalo cho SĐT {phone}. (Lỗi: {info_obj.get('error_message')})"
+                    }
+
+            except Exception as e:
+                return {"error_code": -2, "error_message": f"Lỗi mạng khi tra cứu SĐT: {e}"}
+
+        # --- BƯỚC 2: Gửi tin nhắn ---
+        # Nếu logic trên chạy đúng, target_uid giờ là UID xịn.
+        print(f"[INFO] Đang gửi tin nhắn tới UID: {target_uid}...")
+        return self.sendTextMessage(to_uid=target_uid, message=message)
