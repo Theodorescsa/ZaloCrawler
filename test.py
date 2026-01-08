@@ -1,17 +1,16 @@
-from zalo_search_api import ZaloClient
+from zalo_client import ZaloClient
 import json
-secret_key_b64 = 'JflN16+G2MnX2csb0rqgXg=='
-cookie_string = "ozi=2000.SSZzejyD2DyiZwEqqGn1pJ75lh39JHN1E8Yy_zm36zbwrAxraqyOtpIUfVUMIX7VCj6bz9865zatrQNyD3ar.1; _ga_1J0YGQPT22=GS1.1.1743267239.1.1.1743267278.21.0.0; _gcl_au=1.1.1210773121.1762247361; _fbp=fb.1.1762247361146.837283859710473447; _ga_WSPJQT0ZH1=GS2.1.s1763113890$o2$g1$t1763113969$j60$l0$h0; _ga_NVN38N77J3=GS2.2.s1763113873$o3$g1$t1763113970$j27$l0$h0; _ga_E63JS7SPBL=GS2.1.s1763113859$o4$g1$t1763114099$j60$l0$h0; __zi=3000.SSZzejyD2DyiZwEqqGn1pJ75lh39JHN1E8Yy_zm36zbxrAxraayOt3EUhlQGGHEMDP6YkfP75f8rcQUtDG.1; __zi-legacy=3000.SSZzejyD2DyiZwEqqGn1pJ75lh39JHN1E8Yy_zm36zbxrAxraayOt3EUhlQGGHEMDP6YkfP75f8rcQUtDG.1; _ga_907M127EPP=GS2.1.s1766142174$o6$g1$t1766142174$j60$l0$h0; zoaw_sek=_jZY.1938785149.2.mkLFpMrjC2SGxhzKRMqm9srjC2TjRJ0dR8cPTGHjC2S; zoaw_type=0; _gid=GA1.2.1016670242.1767587780; _zlang=vn; _ga_3EM8ZPYYN3=GS2.2.s1767587784$o40$g0$t1767587784$j60$l0$h0; zpsid=PW4-.355636788.146.OoQoP7wS8zPA2X73SfmZrWllKULBgHNbIAiRxcNOgSvWWOHnVqGSZHUS8zO; zpw_sek=eR5i.355636788.a0.LH6EEYBtVw4MOKsq0_T_eLdL6ie0pLthH9ina1JSE9DlcIUJGOGTaL266Fb5oaA3N-mxAphfOWQ5zgUUUPv_eG; app.event.zalo.me=616744305790528006; _ga_YT9TMXZYV9=GS2.1.s1767603451$o8$g1$t1767603472$j39$l0$h0; _ga=GA1.1.759643980.1743071453; _ga_YS1V643LGV=GS2.1.s1767603476$o47$g0$t1767603477$j59$l0$h0; _ga_RYD7END4JE=GS2.2.s1767603477$o46$g1$t1767603477$j60$l0$h0"
+secret_key_b64 = 'hdqA2PcowjsqGRrtLtb2FA=='
+cookie_string = "ozi=2000.SSZzejyD2DyiZwEqqGn1pJ75lh39JHN1E8Yy_zm36zbwrAxraqyOtpIUfVUMIX7VCj6bz9865zatrQNyD3ar.1; _ga_1J0YGQPT22=GS1.1.1743267239.1.1.1743267278.21.0.0; _gcl_au=1.1.1210773121.1762247361; _fbp=fb.1.1762247361146.837283859710473447; __zi=3000.SSZzejyD2DyiZwEqqGn1pJ75lh39JHN1E8Yy_zm36zbxrAxraayOt3EUhlQGGHEMDP6YkfP75f8rcQUtDG.1; __zi-legacy=3000.SSZzejyD2DyiZwEqqGn1pJ75lh39JHN1E8Yy_zm36zbxrAxraayOt3EUhlQGGHEMDP6YkfP75f8rcQUtDG.1; _ga_907M127EPP=GS2.1.s1766142174$o6$g1$t1766142174$j60$l0$h0; _ga_YT9TMXZYV9=GS2.1.s1767670825$o9$g0$t1767670825$j60$l0$h0; zoaw_sek=QkLN.1968800208.2.8wLFSLG-2NI4lr01L3u9T5G-2NHKFWbqLGMDA3q-2NG; zoaw_type=0; _ga_NVN38N77J3=GS2.2.s1767670840$o4$g1$t1767670845$j55$l0$h0; _ga_WSPJQT0ZH1=GS2.1.s1767670858$o3$g1$t1767670880$j38$l0$h0; _ga_E63JS7SPBL=GS2.1.s1767670834$o5$g1$t1767670883$j11$l0$h0; _ga=GA1.2.759643980.1743071453; _gid=GA1.2.1733340641.1767856264; _ga_RYD7END4JE=GS2.2.s1767856264$o47$g1$t1767856265$j59$l0$h0; _ga_YS1V643LGV=GS2.1.s1767856264$o48$g0$t1767856265$j59$l0$h0; _zlang=vn; _ga_3EM8ZPYYN3=GS2.2.s1767856272$o41$g0$t1767856272$j60$l0$h0; zpsid=zew_.355636788.155.DPQiPxWTvLUCYzT2j1tbLyrkbsIDADDaZYhTRwDJuMoc04BmkR-z2D4TvLS; zpw_sek=ZuUG.355636788.a0.-iRXdssXCFTPDmBYJA4mznQ3LPnFcnAV2T1nnJt2Nu07qa6mFzD4knd30h4id0tL4Bf-yrQ_BL3Ae9ElCiWmzm; app.event.zalo.me=616744305790528006"
 client = ZaloClient(secret_key_b64, cookie_string)
-data = "S/gN3xfJdnanaR3Q3TEzGUbHRB+NqiKYwJ+WyBekmcu66nF03MMGYpvGS1vbG2Nt4Xi14gENNhbN65h7oGqcgLBYjTo5yDb7Gfjg/H5rimrUauGWOTVs7w3ViGRU+cQHKTbxJVy3FoslVE6YF41NYvlSTBgTNehOl0cXDaGnx+U/MhtvIXPWm0uWWLfiNlaBl21O1d3470tVlrkw6yeGqmRpPxLprzF+6L1N30AqtKPUQ/D9/+2O/yvVPcu4AGaqSfUEmcqF1z+B553mx52SldT87SS211dpri0KgSAoIvPt79xdku/YyuIMBhLu3xJ+yayXvDNYZpgo8XkFRjBtcvWE0kkeuabi0Lo3OqCNyORLhyqhEr2IiJ6ioGO6LW53KJIckqwHR84eTZGT4q8z/+RnrjwBmsK8+ReEj1VNstVKl5zSZTOk+VforzyFJmMHmaNXnBHg4epERpolpf2YGQp+xsMjhzZzspUjv/P2IQzX1GKcfEoduYNRwapESU1lYu8yfrt46B6Ud/jVOTQSRxL3TRCgH3J1AIIX75hay24IBpk7E51N0A3hYItLfHM4Y/qvMyHu9bACXy6UFn5vovGFtdl26eBhZLNjqSpASDeCCl9UOXMIdNA0UzKg2A8AJRWnLNzeFrB8rO1t0zkBXIxV5p+pac/9a/LK16xMAZPB5olTq+uF39BhmYqj6vs+dubSeypejY8Vcb0LNarokwjRmTFDPIDW+Eit0Bb0dBLJdviVe90inrNNNlvsi0wY4MFRXl99sIawT2YCzM5ov4jAGbe1jVnTQ9J8ULS4gfsI3nJKclnwyse+GmvjSrKNy/NCfPCf9Cb5Cm1Je744QviTTZ/CuuBHUVLxzHYxLBqi+wd5dNT2BhhsvJYU6E2jwmA6GgcZA75D//CNEjVhN9ktNOHlK0uigN0Xdac6gE4m49i1lAOsN9QXo7R8MEfiuQdQyLaGh//ygGzQwpaRnIPiRcsXsDWo0WD4EK6/BucmZZiNH2vBB2GfnyNP7+57nGIYu+T7bW0Y4qWJq2ilA9RRor9ox1D8Ec41JvweF0yY/vFb1T1IObCXtfgU4j1Nb70RXEtVpPpVZNvusYQXgJJFE3TPXhyt3BovqFzwWh6HWNKR1cKCdLgT3Ai5nLDUEDx27raBLAyI0D0H7IbnXjG6NLDhprqfJERIUI3Qk3rQ9CZRPFLDXItXeOobISpS+QnUY208tJn2YQ7HrmvSHlFBn94iZb7aVranMVru0qWpc0hU0Tr2DubBvqrCVRMu"
 
+data = "57i4rgZDfv2WWov6Wf/tnqAhbhEqQBABBMyjYlgSevKXgqrA84aUF2byHLx/cVr5NwTfs1o3O+4VAFV1b3K4ah8ONr/jIJuh5SgZzJHcnrzxAnLgO7nd4uiAlx7hXex3nWCWZ670jz7SQlDKbJ66dsHPtNp8o8DXxuKBcfmcT+tw9D1QX0Frk0PLnn/NyfMtuPR8YoVQZ/AzV8E++pkC2w=="
 
 
 decode = client.decodeAES(data)
 print(decode)
-# # list_friend = client.getRecommendedFriendsV2()
-# # print(list_friend)
-# print(decode)
+# list_friend = client.getRecommendedFriendsV2()
+# print(list_friend)
 # Ví dụ gửi tin nhắn cho cá nhân
 # try:
 #     result = client.sendZText(
@@ -63,11 +62,27 @@ print(decode)
 # )
 # print("Gửi thành công:", json.dumps(resp, indent=2, ensure_ascii=False))
 
-phone = "0919299589" # Số điện thoại người nhận
-msg = "Chào bạn, mình nhắn từ tool Python qua SĐT!"
 
-try:
-    result = client.sendSmartMessage(phone, msg)
-    print("Kết quả:", json.dumps(result, indent=2, ensure_ascii=False))
-except Exception as e:
-    print("Lỗi:", e)
+if __name__ == "__main__":
+    # 1. Khởi tạo
+    
+    # 2. Đăng nhập QR (Lấy Cookie id.zalo.me & Session Init)
+    user_info = client.wait_for_qr_login()
+    
+    # if user_info:
+    #     # 3. Hoàn tất đăng nhập (Lấy Secret Key cho chat.zalo.me)
+    #     # Bước này sẽ sinh zcid, mã hóa params gửi lên server
+    #     success = client.finalize_login()
+        
+    #     if success:
+    #         print("Đăng nhập hoàn toàn thành công. Có thể gọi API Chat ngay bây giờ.")
+            
+    #         # Test thử lấy danh sách bạn bè (cần secret key mới chạy được)
+    #         try:
+    #             print("Đang lấy danh sách bạn bè...")
+    #             # Lưu ý: getUser... cần secret key để decrypt data trả về
+    #             # Nếu secret key sai, hàm này sẽ lỗi padding hoặc rác
+    #             # friends = zalo.getUserByPhone("09xxxx") 
+    #             # print(friends)
+    #         except Exception as e:
+    #             print(e)
