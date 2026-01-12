@@ -5,6 +5,7 @@ import requests
 from Crypto.Cipher import AES
 from typing import Optional, Dict
 import os
+from curl_cffi import requests as cffi_requests
 
 # ====== PURE UTILS (KHÔNG DÙNG GLOBAL) ======
 def _b64decode_padded(s: str) -> bytes:
@@ -347,14 +348,28 @@ class ZaloClient:
         # Nếu logic trên chạy đúng, target_uid giờ là UID xịn.
         print(f"[INFO] Đang gửi tin nhắn tới UID: {target_uid}...")
         return self.sendTextMessage(to_uid=target_uid, message=message)
-    def wait_for_qr_login(self, proxies: Optional[Dict] = None):
+    def wait_for_qr_login_with_cookie_fixed(self, proxies: Optional[Dict] = None):
+        """
+        Phiên bản Hardcode Cookie: Bỏ qua warm-up tự động để tránh bị chặn IP/Fingerprint.
+        """
         try:
             from curl_cffi import requests as cffi_requests
         except ImportError:
             print("Chưa cài curl_cffi")
             return None
 
-        print("\n[LOGIN] --- BẮT ĐẦU (FIX NO POPUP) ---")
+        # ==============================================================================
+        # [QUAN TRỌNG] DÁN COOKIE TỪ TRÌNH DUYỆT THẬT VÀO DÒNG DƯỚI ĐÂY
+        # ==============================================================================
+        MANUAL_COOKIE = "zpdid=4HR_arpqgpGQ4PERMF37DHeKb9rTyC8q; ozi=2000.SSZzejyD2DyiZwEqqGn1pJ75lh39JHN1E8Yy_zm36zbwrAxraqyOtpIUfVUMIX7VCj6bz9865zatrQNyD3ar.1; _ga_1J0YGQPT22=GS1.1.1743267239.1.1.1743267278.21.0.0; _gcl_au=1.1.1210773121.1762247361; _fbp=fb.1.1762247361146.837283859710473447; __zi=3000.SSZzejyD2DyiZwEqqGn1pJ75lh39JHN1E8Yy_zm36zbxrAxraayOt3EUhlQGGHEMDP6YkfP75f8rcQUtDG.1; __zi-legacy=3000.SSZzejyD2DyiZwEqqGn1pJ75lh39JHN1E8Yy_zm36zbxrAxraayOt3EUhlQGGHEMDP6YkfP75f8rcQUtDG.1; zoaw_sek=QkLN.1968800208.2.8wLFSLG-2NI4lr01L3u9T5G-2NHKFWbqLGMDA3q-2NG; zoaw_type=0; _ga_NVN38N77J3=GS2.2.s1767670840$o4$g1$t1767670845$j55$l0$h0; _ga_WSPJQT0ZH1=GS2.1.s1767670858$o3$g1$t1767670880$j38$l0$h0; _ga_E63JS7SPBL=GS2.1.s1767670834$o5$g1$t1767670883$j11$l0$h0; _gid=GA1.2.1733340641.1767856264; _zlang=vn; app.event.zalo.me=616744305790528006; zpsid=Fpsv.355636788.160.doADeKtx4B5vRIAaGViGiJY8Oe9upYQ2UymeYLQr58fJvhSMJBvpxYJx4B4; _ga_907M127EPP=GS2.1.s1767944044$o7$g1$t1767944083$j21$l0$h0; _ga_YT9TMXZYV9=GS2.1.s1767949537$o11$g0$t1767949537$j60$l0$h0; _gat=1; _ga_RYD7END4JE=GS2.2.s1767964530$o54$g1$t1767964531$j59$l0$h0; _ga_YS1V643LGV=GS2.1.s1767964530$o56$g0$t1767964531$j59$l0$h0; zlogin_session=kW4JGLyjCnIxFnDDLXTbH-Tj1q1U5cT5xMyVLmHIQLscBXDO54rsMAqk6raYVG; _ga=GA1.2.759643980.1743071453; _ga_3EM8ZPYYN3=GS2.2.s1767964534$o49$g0$t1767964534$j60$l0$h0"  # <--- DÁN VÀO ĐÂY (GIỮ NGUYÊN DẤU NGOẶC KÉP)
+        # ==============================================================================
+
+        if len(MANUAL_COOKIE) < 20 or "zpsid" not in MANUAL_COOKIE:
+            print("\n[LỖI] Bạn chưa dán Cookie hoặc Cookie thiếu 'zpsid'.")
+            print("Vui lòng lấy Cookie từ F12 -> Network trên trình duyệt thật.")
+            return None
+
+        print("\n[LOGIN] --- BẮT ĐẦU (CHẾ ĐỘ THỦ CÔNG) ---")
         
         if os.path.exists("zalo_qr.png"):
             os.remove("zalo_qr.png")
@@ -368,48 +383,34 @@ class ZaloClient:
             with open("imei.txt", "w") as f:
                 f.write(my_imei)
 
-        # ==========================================
-        # CẤU HÌNH QUAN TRỌNG THEO LOG BROWSER
-        # ==========================================
-        # Update Version mới nhất từ Log của bạn
-        REAL_VER = "5.6.1" 
+        REAL_VER = self.zpw_ver
+
+        # 2. KHỞI TẠO SESSION
+        # Dùng chrome120 là đủ vì ta đã có cookie xịn
+        session = cffi_requests.Session(impersonate="chrome120")
         
-        # Dùng Chrome 124 cho mới (gần với 142)
-        session = cffi_requests.Session(impersonate="chrome124")
-        
-        session.headers.update({
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        base_headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Referer": "https://id.zalo.me/account?continue=https%3A%2F%2Fchat.zalo.me%2F",
             "Origin": "https://id.zalo.me",
+            "Accept": "application/json, text/plain, */*",
             "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.6,en;q=0.5",
-            "Cache-Control": "no-cache",
-            "Pragma": "no-cache"
-        })
+            # Inject Cookie thủ công vào Header
+            "Cookie": MANUAL_COOKIE,
+            # Các header giả lập trình duyệt
+            "Sec-Ch-Ua": '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+            "Sec-Ch-Ua-Mobile": "?0",
+            "Sec-Ch-Ua-Platform": '"Windows"',
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site": "same-origin",
+            "Priority": "u=1, i"
+        }
+        session.headers.update(base_headers)
 
-        # --- BƯỚC 1: WARM-UP LẤY COOKIE (BẮT BUỘC PHẢI CÓ ZPSID/ZPDID) ---
-        print("[INIT] Đang khởi tạo Session để lấy Cookie...")
-        try:
-            # Gọi 2 lần để đảm bảo cookie được set đầy đủ
-            session.get("https://id.zalo.me/account", proxies=proxies, timeout=10)
-            time.sleep(1)
-            # Gọi lại đúng URL có tham số để trigger cookie zpsid
-            url_page = f"https://id.zalo.me/account?continue={quote(self.chat_domain + '/')}&v={REAL_VER}"
-            resp_init = session.get(url_page, proxies=proxies, timeout=10)
-            
-            cookies = session.cookies.get_dict()
-            # Debug Cookie
-            print(f"[DEBUG] Cookies hiện có: {list(cookies.keys())}")
-            
-            if "zpsid" not in cookies and "zpdid" not in cookies:
-                print("[WARNING] Vẫn chưa lấy được zpsid/zpdid. Thử ép cookie giả lập...")
-                # Fallback: Nếu mạng chặn cookie, ta có thể thử fake 1 cái zpdid (nhưng tốt nhất là để tự nhiên)
-                # session.cookies.set("zpdid", "CAKE_ZPDID_FAKE") 
-            
-        except Exception as e:
-            print(f"[ERROR] Lỗi warm-up: {e}")
+        print("[INIT] Đã nạp Cookie thủ công. Bỏ qua bước Warm-up.")
 
-        # --- BƯỚC 2: VERIFY CLIENT ---
-        # Bước này giúp Server biết phiên này là tin cậy => Mới cho phép đẩy Popup
+        # --- BƯỚC 1: VERIFY CLIENT (Bắt buộc để hiện Popup) ---
         print(f"[INIT] Xác thực thiết bị...")
         try:
             verify_payload = {
@@ -417,18 +418,35 @@ class ZaloClient:
                 "imei": my_imei,
                 "computer_name": "Chrome_Windows",
                 "continue": self.chat_domain + "/",
-                "v": REAL_VER  # Quan trọng: Phải khớp version
+                "v": REAL_VER
             }
+            # Request này sẽ dùng cookie thủ công để báo với server rằng "Session này là hợp lệ"
             session.post("https://id.zalo.me/account/verify-client", data=verify_payload, proxies=proxies)
-            time.sleep(0.5)
         except Exception as e:
-            print(f"[WARN] Verify lỗi: {e}")
+            print(f"[WARN] Verify lỗi (có thể bỏ qua): {e}")
+
+        # --- BƯỚC 2: ĐỒNG BỘ SESSION (JR) ---
+        print(f"[INIT] Đồng bộ UserInfo...")
+        try:
+            headers_jr = base_headers.copy()
+            headers_jr["Referer"] = "https://chat.zalo.me/"
+            headers_jr["Origin"] = "https://chat.zalo.me"
+            
+            session.get(
+                "https://jr.chat.zalo.me/jr/userinfo", 
+                headers=headers_jr,
+                proxies=proxies
+            )
+        except Exception:
+            pass
 
         # --- BƯỚC 3: TẠO QR ---
         print("[ACTION] Đang tạo mã QR...")
         try:
-            # Thêm tham số ts (timestamp) để tránh cache
             ts = int(time.time() * 1000)
+            # Đảm bảo header quay về id.zalo.me
+            session.headers.update(base_headers)
+            
             resp = session.post(
                 f"https://id.zalo.me/account/authen/qr/generate?ts={ts}",
                 data={"continue": self.chat_domain + "/", "v": REAL_VER, "imei": my_imei},
@@ -447,13 +465,13 @@ class ZaloClient:
                 f.write(base64.b64decode(qr_image_b64.split(",")[1]))
             
             print(f"[ACTION] QR ID: {qr_code_id}")
-            print(">>> QUÉT MÃ NGAY (Nhớ tắt App Zalo điện thoại mở lại trước khi quét) <<<")
+            print(">>> QUÉT MÃ NGAY (Mở Zalo trên điện thoại -> Quét QR) <<<")
 
         except Exception as e:
             print(f"[ERROR] Lỗi tạo QR: {e}")
             return False
 
-        # --- BƯỚC 4: CHỜ QUÉT (WAITING SCAN) ---
+        # --- BƯỚC 4: CHỜ QUÉT ---
         print("[WAIT] Đang chờ quét...", end="", flush=True)
         url_scan = "https://id.zalo.me/account/authen/qr/waiting-scan"
         url_confirm = "https://id.zalo.me/account/authen/qr/waiting-confirm"
@@ -471,16 +489,13 @@ class ZaloClient:
                     j = resp.json()
                     
                     if j.get("error_code") == 0:
-                        print("\n[SUCCESS] Đã quét! Đang đợi bạn bấm 'Đăng nhập' trên điện thoại...")
-                        # Khi server trả về 0 ở đây, nó cũng trigger tín hiệu xuống đt
-                        # Nếu đt không hiện, là do request generate bên trên thiếu cookie session
+                        print("\n[SUCCESS] Đã quét! Đang đợi xác nhận...")
                         step = 2
                     elif j.get("error_code") == -1004:
                          print("\n[FAIL] QR hết hạn.")
                          return False
 
                 elif step == 2:
-                    # Polling chờ Confirm
                     resp = session.post(url_confirm, data={
                         "code": qr_code_id, 
                         "gToken": "", 
@@ -494,7 +509,217 @@ class ZaloClient:
                         print("\n[SUCCESS] Đăng nhập thành công!")
                         break
                     elif j.get("error_code") == -1004:
-                        print("\n[FAIL] Hết hạn hoặc bạn đã bấm Từ chối.")
+                        print("\n[FAIL] Hết hạn/Từ chối.")
+                        return False
+            except Exception:
+                time.sleep(1)
+                continue
+
+            print(".", end="", flush=True)
+            time.sleep(2)
+
+        # --- KẾT THÚC ---
+        # Cập nhật lại cookie_string từ session (bao gồm cookie mới nếu có)
+        cookies = session.cookies.get_dict()
+        # Ưu tiên lấy từ session, nếu không có thì dùng lại cookie thủ công
+        if not cookies:
+             self.cookie_string = MANUAL_COOKIE
+        else:
+             self.cookie_string = "; ".join([f"{k}={v}" for k, v in cookies.items()])
+        
+        print(f"[INFO] Final Cookie Length: {len(self.cookie_string)}")
+        return {"status": "ok"}
+
+    def wait_for_qr_login(self, proxies: Optional[Dict] = None):
+        print("\n[LOGIN] --- BẮT ĐẦU (SAFARI MODE) ---")
+        
+        if os.path.exists("zalo_qr.png"):
+            os.remove("zalo_qr.png")
+
+        # 1. IMEI
+        if os.path.exists("imei.txt"):
+            with open("imei.txt", "r") as f:
+                my_imei = f.read().strip()
+        else:
+            my_imei = str(uuid.uuid4())
+            with open("imei.txt", "w") as f:
+                f.write(my_imei)
+
+        REAL_VER = self.zpw_ver
+
+        # ============================================================
+        # CẤU HÌNH SAFARI (Login Zalo mượt hơn Chrome)
+        # ============================================================
+        # Safari 15.3 thường có sẵn trong curl_cffi bản cũ lẫn mới
+        
+        # 1. Đổi sang Chrome Impersonate (Phổ biến và ít bị lỗi fingerprint hơn Safari trên Win)
+        try:
+            # Dùng chrome110 hoặc chrome120 nếu lib hỗ trợ
+            session = cffi_requests.Session(impersonate="chrome120")
+        except:
+            session = cffi_requests.Session(impersonate="chrome110")
+
+        # 2. Header chuẩn cho Chrome (Bỏ header Safari cũ đi)
+        base_headers = {
+            # curl_cffi tự set User-Agent khớp với bản Chrome impersonate, 
+            # ĐỪNG set cứng User-Agent Safari ở đây sẽ bị lộ bot ngay.
+            "Referer": "https://id.zalo.me/",
+            "Origin": "https://id.zalo.me",
+            "Accept-Language": "vi-VN,vi;q=0.9,fr-FR;q=0.8,fr;q=0.7,en-US;q=0.6,en;q=0.5",
+            "sec-ch-ua-platform": '"Windows"', # Vì bạn đang chạy trên Win
+            "sec-ch-ua-mobile": "?0",
+            "sec-fetch-dest": "document",
+            "sec-fetch-mode": "navigate",
+            "sec-fetch-site": "same-origin",
+            "sec-fetch-user": "?1",
+            "upgrade-insecure-requests": "1"
+        }
+        session.headers.update(base_headers)
+
+        # --- BƯỚC 1: WARM-UP CHIẾN THUẬT MỚI ---
+        # Flow chuẩn trình duyệt:
+        # 1. Vào chat.zalo.me (để lấy cookie tracking ban đầu)
+        # 2. Redirect sang id.zalo.me (lúc này mới sinh zpsid)
+        
+        print("[INIT] Đang warm-up (Flow mới)...")
+        has_zpsid = False
+        
+        try:
+            # Request 1: Giả vờ vào trang chat trước
+            session.get("https://chat.zalo.me/", proxies=proxies, timeout=10)
+            
+            # Request 2: Gọi trang login chính (QUAN TRỌNG: Đây là nơi zpsid được set)
+            # Không cần gọi api logininfo vội, chỉ cần GET trang html là đủ
+            login_url = f"https://id.zalo.me/account?continue={quote(self.chat_domain + '/')}&v={self.zpw_ver}"
+            
+            resp = session.get(login_url, proxies=proxies, timeout=15)
+            
+            # Debug: In thử xem có bị redirect sang trang captcha không
+            if "captcha" in resp.url:
+                print("🛑 CẢNH BÁO: Đang bị dính Captcha/WAF chặn IP!")
+            
+            # Kiểm tra cookie
+            cookies = session.cookies.get_dict()
+            if "zpsid" in cookies:
+                print(f"[OK] Đã có zpsid: {cookies['zpsid'][:10]}...")
+                has_zpsid = True
+            else:
+                # Nếu chưa có, thử gọi nhẹ logininfo (như code cũ của bạn)
+                print("[RETRY] Chưa thấy zpsid, thử kích hoạt logininfo...")
+                session.post(
+                    "https://id.zalo.me/account/logininfo",
+                    data={"continue": self.chat_domain + "/", "v": self.zpw_ver},
+                    proxies=proxies
+                )
+                
+                cookies = session.cookies.get_dict()
+                if "zpsid" in cookies:
+                    print(f"[OK] Đã có zpsid sau khi post logininfo.")
+                    has_zpsid = True
+
+        except Exception as e:
+            print(f"[ERROR] Lỗi Warmup: {e}")
+
+        # --- BƯỚC 2: VERIFY CLIENT ---
+        print(f"[INIT] Xác thực thiết bị...")
+        try:
+            verify_payload = {
+                "type": "device",
+                "imei": my_imei,
+                "computer_name": "Mac_Safari",
+                "continue": self.chat_domain + "/",
+                "v": REAL_VER
+            }
+            session.post("https://id.zalo.me/account/verify-client", data=verify_payload, proxies=proxies)
+        except Exception:
+            pass
+
+        # --- BƯỚC 3: GỌI USERINFO ---
+        print(f"[INIT] Đồng bộ UserInfo...")
+        try:
+            headers_jr = base_headers.copy()
+            headers_jr["Referer"] = "https://chat.zalo.me/"
+            headers_jr["Origin"] = "https://chat.zalo.me"
+            # Giả lập Safari trên Mac
+            headers_jr["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.3 Safari/605.1.15"
+            
+            session.get(
+                "https://jr.chat.zalo.me/jr/userinfo", 
+                headers=headers_jr,
+                proxies=proxies
+            )
+        except Exception:
+            pass
+
+        # --- BƯỚC 4: TẠO QR ---
+        print("[ACTION] Đang tạo mã QR...")
+        try:
+            ts = int(time.time() * 1000)
+            session.headers.update(base_headers)
+            
+            resp = session.post(
+                f"https://id.zalo.me/account/authen/qr/generate?ts={ts}",
+                data={"continue": self.chat_domain + "/", "v": REAL_VER, "imei": my_imei},
+                proxies=proxies
+            )
+            data_gen = resp.json()
+            
+            if data_gen.get("error_code") != 0:
+                print(f"[ERROR] Server chặn: {data_gen}")
+                return False
+
+            qr_code_id = data_gen["data"]["code"]
+            qr_image_b64 = data_gen["data"]["image"]
+
+            with open("zalo_qr.png", "wb") as f:
+                f.write(base64.b64decode(qr_image_b64.split(",")[1]))
+            
+            print(f"[ACTION] QR ID: {qr_code_id}")
+            print(">>> QUÉT MÃ NGAY <<<")
+
+        except Exception as e:
+            print(f"[ERROR] Lỗi tạo QR: {e}")
+            return False
+
+        # --- BƯỚC 5: CHỜ QUÉT ---
+        print("[WAIT] Đang chờ quét...", end="", flush=True)
+        url_scan = "https://id.zalo.me/account/authen/qr/waiting-scan"
+        url_confirm = "https://id.zalo.me/account/authen/qr/waiting-confirm"
+        
+        step = 1
+        
+        while True:
+            try:
+                if step == 1:
+                    resp = session.post(url_scan, data={
+                        "code": qr_code_id, 
+                        "continue": self.chat_domain + "/", 
+                        "v": REAL_VER
+                    }, proxies=proxies)
+                    j = resp.json()
+                    
+                    if j.get("error_code") == 0:
+                        print("\n[SUCCESS] Đã quét! Đang đợi xác nhận...")
+                        step = 2
+                    elif j.get("error_code") == -1004:
+                         print("\n[FAIL] QR hết hạn.")
+                         return False
+
+                elif step == 2:
+                    resp = session.post(url_confirm, data={
+                        "code": qr_code_id, 
+                        "gToken": "", 
+                        "gAction": "CONFIRM_QR", 
+                        "continue": self.chat_domain + "/", 
+                        "v": REAL_VER
+                    }, proxies=proxies)
+                    j = resp.json()
+                    
+                    if j.get("error_code") == 0:
+                        print("\n[SUCCESS] Đăng nhập thành công!")
+                        break
+                    elif j.get("error_code") == -1004:
+                        print("\n[FAIL] Hết hạn/Từ chối.")
                         return False
             except Exception:
                 time.sleep(1)

@@ -8,7 +8,7 @@ from solve_captcha import solve_zalo_captcha
 from utils import dict_to_cookie_string, load_phones_batch, pretty_print, save_json, save_ndjson, save_status_back_to_csv
 from zalo_api_capturer import ZaloAPICapturer
 from zalo_crypto import ZaloCrypto
-from zalo_search_api import ZaloClient
+from zalo_client import ZaloClient
 
 def run_friend_apis(client: ZaloClient, phones: list[str]) -> dict[str, bool]:
     print("\n=== GỌI API FRIEND ===")
