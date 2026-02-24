@@ -2,3 +2,8 @@ Hướng 1: Đồng bộ danh bạ
 Hướng 2: https://zalo.me/0363127871 dùng link thẳng trên chrome
 Hướng 3: Bypass
 return ce || K.zsymb(0, "9ahAJW", "getSecretKey
+
+plaintext {"error_code":0,"error_message":"Successful.","data":{"avatar":"https://s160-ava-talk.zadn.vn/default","cover":"https://cover-talk.zadn.vn/default","status":"","gender":0,"dob":1011027600,"sdob":"15/01/2002","globalId":"KE7P1080RQ93K0MRBL7V9PGEPQ0UD780","bizPkg":{"pkgId":0},"uid":"1053319245808723215","zalo_name":"Nguyễn Đình Thái","display_name":"Nguyễn Đình Thái"}}
+
+https://qr-talk.zdn.vn/4/221482361/0d13cf6e3827d1798836.jpg
+https://qr-talk.zdn.vn/4/221482361/0d13cf6e3827d1798836.jpg

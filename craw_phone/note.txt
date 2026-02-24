@@ -1,0 +1,10 @@
+  // {
+  //   "secret_key_b64": "ehbIpfA7SuvEK/EnntrPSg==",
+  //   "cookie": "_ga=GA1.2.979086047.1770863427; _gid=GA1.2.2142498067.1770863427; _zlang=vn; _ga_3EM8ZPYYN3=GS2.2.s1770863427$o1$g1$t1770863429$j58$l0$h0; ZConsent=timestamp=1770863452945&location=https://zalo.me/pc; zpsid=rVPw.451367471.10.i5fr-iOWcshfSdnmoY2RQhDJwLxp4QXSyHIiMzrXEndOFJpDnnYWvwyWcse; zpw_sek=n2ck.451367471.a0.I9m8k2u9Sry1MvH53mbpNrKh5ZGCCr4wHciwBqX8H0nRVpOK0KmTCLfx8mn9D4vzKn8o_rqNRlY924faes1pNm; ZConsent=timestamp=1770863452945&location=https://zalo.me/pc; __zi=3000.SSZzejyD0jydXQckra00a3BBfxQL71AQV8UZizbJ49XvWwJut5CMr722eFlJLnBHDm.1; __zi-legacy=3000.SSZzejyD0jydXQckra00a3BBfxQL71AQV8UZizbJ49XvWwJut5CMr722eFlJLnBHDm.1; ozi=2000.S8lYxye10ezjtxwbp0u3ZcxRlkxB2mp2PzgwxSGF2CSt.1; app.event.zalo.me=1413577741629300759",
+  //   "proxy": null
+  // },
+  // {
+  //   "secret_key_b64": "LlsLFj9iD7Xd9jI0L3wO3A==",
+  //   "cookie": "_gid=GA1.2.743149322.1770863362; _ga_RYD7END4JE=GS2.2.s1770863362$o1$g1$t1770863362$j60$l0$h0; _ga_YS1V643LGV=GS2.1.s1770863362$o1$g0$t1770863362$j60$l0$h0; _zlang=vn; _ga=GA1.2.505743217.1770863362; _ga_3EM8ZPYYN3=GS2.2.s1770863367$o1$g0$t1770863367$j60$l0$h0; zpsid=mzBy.451375709.1.l_C9MY_TSfTohvMD8zrobrgk0ACQx46W6kf2hZISqkGnmDKmBXb86aRTSfS; zpw_sek=uf9V.451375709.a0.RB3AIr8E3rWFVEX2SmuFM2aiQZDmD2qKFdr37ZWtPXnbLcjXE4S_565vG6iJCp9wBnLE-24G4l_r3yjYtsSFM0; __zi=3000.SSZzejyD6zOgdh2mtnLQWYQN_RAG01ICFjIXe9fEM8WxcEwZcaXRXdAUwQtMGLg2S9xihJGq.1; __zi-legacy=3000.SSZzejyD6zOgdh2mtnLQWYQN_RAG01ICFjIXe9fEM8WxcEwZcaXRXdAUwQtMGLg2S9xihJGq.1; ozi=2000.QOBlzDCV2uGerkFzm09Vs6BGxFF53bdMBTZh_Oa7MD8lsExzD3G.1; app.event.zalo.me=7043202618859385399",
+  //   "proxy": null
+  // },

@@ -1,57 +1,56 @@
 from zalo_client import ZaloClient
 import json
-secret_key_b64 = 'YU9bjfEYcbJPvJozl4s4OQ=='
-cookie_string = "ozi=2000.SSZzejyD2DyiZwEqqGn1pJ75lh39JHN1E8Yy_zm36zbwrAxraqyOtpIUfVUMIX7VCj6bz9865zatrQNyD3ar.1; _ga_1J0YGQPT22=GS1.1.1743267239.1.1.1743267278.21.0.0; _gcl_au=1.1.1210773121.1762247361; _fbp=fb.1.1762247361146.837283859710473447; __zi=3000.SSZzejyD2DyiZwEqqGn1pJ75lh39JHN1E8Yy_zm36zbxrAxraayOt3EUhlQGGHEMDP6YkfP75f8rcQUtDG.1; __zi-legacy=3000.SSZzejyD2DyiZwEqqGn1pJ75lh39JHN1E8Yy_zm36zbxrAxraayOt3EUhlQGGHEMDP6YkfP75f8rcQUtDG.1; _ga_NVN38N77J3=GS2.2.s1767670840$o4$g1$t1767670845$j55$l0$h0; _ga_WSPJQT0ZH1=GS2.1.s1767670858$o3$g1$t1767670880$j38$l0$h0; _ga_E63JS7SPBL=GS2.1.s1767670834$o5$g1$t1767670883$j11$l0$h0; _ga_907M127EPP=GS2.1.s1767944044$o7$g1$t1767944083$j21$l0$h0; _gid=GA1.2.1626715681.1768391792; _zlang=vn; app.event.zalo.me=616744305790528006; _ga_3EM8ZPYYN3=GS2.2.s1768397818$o53$g0$t1768397818$j60$l0$h0; zpsid=u5s7.355636788.168.5d3tEfg1nykk5_NUbe77o-_ojVYljF7uhBR_yvkrgf24d61icuPRhFE1nyi; zpw_sek=uZ26.355636788.a0.vPy_gtoh8Vr8FHFeNQiX_GU9H9PUaGEaAP93bnhkU9uUuN6BDiHRaKZO5R8jbXpV0QeLa2UrF5hRgYPX6y8X_G; _ga_YT9TMXZYV9=GS2.1.s1768403726$o15$g0$t1768403726$j60$l0$h0; _ga=GA1.1.759643980.1743071453; _ga_YS1V643LGV=GS2.1.s1768403733$o62$g0$t1768403734$j59$l0$h0; _ga_RYD7END4JE=GS2.2.s1768403734$o60$g1$t1768403734$j60$l0$h0"
+secret_key_b64 = 'YJKe4BtixnEaL+mSVrZH6Q=='
+cookie_string = "__zi=3000.SSZzejyD2DyiZwEqqGn1pJ75lh39JHN1E8Yy_zm36zbxrAxraayVtJwRhV6II1gHDvYhlPHE7vKtaAwmDG.1; __zi-legacy=3000.SSZzejyD2DyiZwEqqGn1pJ75lh39JHN1E8Yy_zm36zbxrAxraayVtJwRhV6II1gHDvYhlPHE7vKtaAwmDG.1; app.event.zalo.me=2741210207746556291; _ga_3EM8ZPYYN3=GS2.2.s1768548662$o3$g0$t1768548662$j60$l0$h0; zpsid=O_aT.448370842.11.HW57mDHhYI5Eyp0xs6k98Q4O-nNWKxeMv5Ez4wNLY0pATYw6rJHWIBrhYI4; zpw_sek=djJL.448370842.a0.dNteIbD53XF9tRS9SaKE4oXdQtXnVonA6Gvh9n4nPsiz06zVU2XTHI4VHYK2U3CnBZIm4dvR4xJqH53wEYmE4m; _ga_YT9TMXZYV9=GS2.1.s1768657433$o1$g1$t1768657484$j9$l0$h0; _gid=GA1.2.131743463.1768657492; _gat=1; _ga=GA1.1.301146123.1768447803; _ga_RYD7END4JE=GS2.2.s1768657492$o2$g1$t1768657494$j58$l0$h0; _ga_YS1V643LGV=GS2.1.s1768657492$o3$g0$t1768657494$j58$l0$h0; _zlang=vn"
 client = ZaloClient(secret_key_b64, cookie_string)
-data = "yaG1UhO2SDk441T5zEorynHCqavB440lawZx5mJ4bG6ITJgDkJysbZfQAekBgHV4kzgsSHR0wcX0xXH5o3Ft9xnKWRatPFyh0UKOcMqdxV0Y7oiuDbrigSDLT6qsoUYQeZ8Dpw4SS48djEuqwz68jbBKECGAb79waIMsFEvYqliYea6ByZAFXegumThEVmePZ4vG4558wqNFhU7Ru+WlvQ=="
-decode = client.decodeAES(data)
-print(decode)
-# list_friend = client.getRecommendedFriendsV2()
-# print(list_friend)
-# # Gọi API
+client.getUserByPhone("84923549252")
+
+# data_get_friend_v1 = "P9B8fjSK9cLNGau20TE3N6xyG6YAyN4bU6popNTqEJDaQbfwrCdMqWBx2C+ov6n1Jx0dCHWDHbW1lSWLiB/VhVAA70/sXm7FUwNged4OiBVchzxCEJ6/DkzuSdd51rZhL8SuepItCgeHOw358QUxySnoQrQigx/MeZFM1//SFIh2tqVKRV2qlkr4lLOSak8VROmwAzoZYdAxBTTLP0GNycEwXzP4jjAG0ZeySQuQTaygwSRkA/GDcj1UEnHNEnK69Q2sqBxR/WO9B1sO9neG8YOXYx5Jye0kNsNXUrEX3GFWjkCEXU7K6X91eUetvOjFc4FmIhumN7G1u/3s4kVB2mWc7F2mS8D40EewLuTSCsK2gIsELfoUk/62FxxpC8Dap5rAnlmn3dLwGQxCtrb4/WleXs7SkKP7wuWjTk/gnsTWtQr/sLUTVws6iENMKHUppatzuzhi+Xp5MDWNBgWClRNfEV82rOAEVn6II272eDvNalF6IfZ6cIqV0J+kgoaVfpuPW5tiGCtYr/qHa6/W62Yz7YG+La0yDjfUvviHrgjXZwW+l7j03eHAZ2HiLfOqO9UrRBloW2iRyMgWEp5GGDNy7CDxl0BAHubryQ5+XcOqtrco/eG3KXud5P1O4Y0t"
+
+
+
+
+
+
+
+
+# decode_v1 = client.decodeAES(data_get_friend_v1)
+# print(decode_v1)
+client.getUserByPhone("84923549252")
+# client.sendTextMessage("3530844999012435089","Hello bạn ạdjsadjasidiakxas")
+client.sendSmartMessage("84378571321","sdjasdjadjajsdja")
+# import random
+# import string
+# import time
+
+# def generate_random_uid(length=19):
+#     """
+#     Sinh ra chuỗi số ngẫu nhiên có độ dài cố định.
+#     """
+#     # Chọn ngẫu nhiên các ký tự từ 0-9 và ghép lại
+#     return ''.join(random.choices(string.digits, k=length))
+
+# print("=== BẮT ĐẦU SINH ID NGẪU NHIÊN ===")
+# print("Nhấn Ctrl + C để dừng lại")
+
 # try:
-#     # friend_pversion_map: "UID_0" để lấy thông tin mới nhất
-#     result = client.getProfilesV2(
-#         friend_pversion_map=[f"{target_uid}_0"], 
-#         phonebook_version=1767504728 # Hoặc int(time.time())
-#     )
-#     print(json.dumps(result, indent=2, ensure_ascii=False))
-# except Exception as e:
-#     print(f"Lỗi: {e}")
-
-# UID người nhận (Bạn bè)
-# receiver_uid = "777081826066151257" 
-# msg_content = "Xin chào, đây là tin nhắn test từ Python!"
-
-# # --- SỬA Ở ĐÂY ---
-# # Thay ZaloClient.sendTextMessage bằng client.sendTextMessage
-# resp = client.sendTextMessage(
-#     to_uid=receiver_uid,
-#     message=msg_content
-# )
-# print("Gửi thành công:", json.dumps(resp, indent=2, ensure_ascii=False))
-
-
-# if __name__ == "__main__":
-    # 1. Khởi tạo
-    
-    # 2. Đăng nhập QR (Lấy Cookie id.zalo.me & Session Init)
-    # user_info = client.wait_for_qr_login()
-    
-    # if user_info:
-    #     # 3. Hoàn tất đăng nhập (Lấy Secret Key cho chat.zalo.me)
-    #     # Bước này sẽ sinh zcid, mã hóa params gửi lên server
-    #     success = client.finalize_login()
+#     while True:
+#         # 1. Sinh ID ngẫu nhiên
+#         fake_uid = generate_random_uid(19)
         
-    #     if success:
-    #         print("Đăng nhập hoàn toàn thành công. Có thể gọi API Chat ngay bây giờ.")
-            
-    #         # Test thử lấy danh sách bạn bè (cần secret key mới chạy được)
-    #         try:
-    #             print("Đang lấy danh sách bạn bè...")
-    #             # Lưu ý: getUser... cần secret key để decrypt data trả về
-    #             # Nếu secret key sai, hàm này sẽ lỗi padding hoặc rác
-    #             # friends = zalo.getUserByPhone("09xxxx") 
-    #             # print(friends)
-    #         except Exception as e:
-    #             print(e)
+#         # 2. In ra màn hình để kiểm tra
+#         print(f"Generated ID: {fake_uid}")
+
+#         # --- KHÔNG NÊN BỎ COMMENT DÒNG DƯỚI ĐỂ SPAM ---
+#         response = client.sendTextMessage(fake_uid, "Hello bạn...") 
+#         print("Response: ", response)
+#         # -----------------------------------------------
+#         try:
+#             print(client.decodeAES(response['data']))
+#         except:
+#             continue
+#         # 3. Nên có thời gian nghỉ (sleep) để tránh treo CPU
+#         time.sleep(0.1) 
+
+# except KeyboardInterrupt:
+#     print("\nĐã dừng vòng lặp.")

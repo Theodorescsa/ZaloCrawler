@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 import csv
+import base64
 PHONE_CSV_PATH = Path("database/list_phones/listphones.csv")
 OUTPUT_DIR = Path("./zalo_output")
 OUTPUT_DIR.mkdir(exist_ok=True)
@@ -111,3 +112,25 @@ def save_status_back_to_csv(rows: list[dict]):
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
+
+def _b64decode_padded(s: str) -> bytes:
+    s = s.strip().replace(" ", "+")
+    s += "=" * (-len(s) % 4)
+    return base64.b64decode(s)
+
+def _b64encode_nopad(b: bytes) -> str:
+    return base64.b64encode(b).decode().rstrip("=")
+
+def _pkcs7_pad(b: bytes, block: int = 16) -> bytes:
+    pad = block - (len(b) % block)
+    return b + bytes([pad]) * pad
+
+def _pkcs7_unpad(b: bytes) -> bytes:
+    if not b:
+        return b
+    p = b[-1]
+    if p < 1 or p > 16 or b[-p:] != bytes([p]) * p:
+        raise ValueError("Bad PKCS7 padding")
+    return b[:-p]
+
+

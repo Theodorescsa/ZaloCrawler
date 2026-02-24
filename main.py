@@ -2,10 +2,8 @@
 # -*- coding: utf-8 -*-
 import json
 import time
-from pathlib import Path
-
 from solve_captcha import solve_zalo_captcha
-from utils import dict_to_cookie_string, load_phones_batch, pretty_print, save_json, save_ndjson, save_status_back_to_csv
+from zalo_utils import dict_to_cookie_string, load_phones_batch, pretty_print, save_ndjson, save_status_back_to_csv
 from zalo_api_capturer import ZaloAPICapturer
 from zalo_crypto import ZaloCrypto
 from zalo_client import ZaloClient
@@ -238,8 +236,8 @@ def main():
     print("🤖 ZALO FLOW – LOGIN (Selenium) → DECRYPT → CALL FRIEND APIs")
     print("=" * 80)
 
-    PHONE = ""
-    PASSWORD = ""
+    PHONE = "0354235270"
+    PASSWORD = "@Dinhthai2004-"
     CAPTCHA_API_KEY = "c95a3a78034782856d1ca3f4e221afc3"
 
     capturer = ZaloAPICapturer(
