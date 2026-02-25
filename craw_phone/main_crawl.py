@@ -147,7 +147,7 @@ class ZaloCrawler:
                 if err != 0:
                     logger.warning(f"⚠️ [FAIL] {phone} | Code: {err} | Acc #{acc.id}")
                     
-                    if err == 221: # LỖI QUÁ REQUEST -> NGHỈ ĐẾN MAI
+                    if err in [221, 313]: # LỖI QUÁ REQUEST -> NGHỈ ĐẾN MAI
                         now = datetime.now()
                         tomorrow = (now + timedelta(days=1)).replace(hour=0, minute=0, second=5)
                         wait_sec = (tomorrow - now).total_seconds()
