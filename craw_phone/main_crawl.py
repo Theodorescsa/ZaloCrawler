@@ -26,7 +26,6 @@ DEFAULT_COOLDOWN = 3600   # 1 tiếng khi bị lỗi nặng (312, -366)
 LIMIT_HOURLY = 26         # Số lượng tối đa trong 1 giờ
 LIMIT_DAILY = 129         # Số lượng tối đa trong 1 ngày
 LIMIT_COOLDOWN = 3600     # Thời gian nghỉ sau khi đạt giới hạn giờ (1 tiếng)
-
 class AccountWrapper:
     def __init__(self, acc_data, index):
         self.id = index
@@ -257,4 +256,5 @@ class ZaloCrawler:
 
 if __name__ == "__main__":
     crawler = ZaloCrawler()
+    time.sleep(3600)
     crawler.run()
