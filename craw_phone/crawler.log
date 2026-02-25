@@ -50,3 +50,40 @@ Bạn hãy thử lại vào 16:00.
 2026-02-25 16:01:44 [INFO] ✅ [OK] 84362077831 -> Diệu Linh (Acc #0 - 26/26)
 2026-02-25 16:01:44 [INFO] 🛑 [MAX] Acc #0 đã crawl thành công 26 số. Nghỉ 60 phút.
 2026-02-25 16:01:44 [WARNING] 🚫 [LIMIT] Account #0 tạm dừng 60 phút (đến 17:01:44).
+2026-02-25 17:08:04 [INFO] [INIT] Đã load 1 tài khoản.
+2026-02-25 17:08:04 [INFO] [INIT] Đang đọc file input: phone.txt...
+2026-02-25 17:08:04 [INFO] [INIT] Đã nạp 1584 số điện thoại.
+2026-02-25 17:08:04 [INFO] 📊 Phát hiện 1 tài khoản. Hệ thống sẽ chạy 1 luồng.
+2026-02-25 17:08:04 [INFO] 🚀 Bắt đầu chạy crawler...
+2026-02-25 17:08:05 [WARNING] ⚠️ [FAIL] 84976958335 (Code 221): Vượt quá số request cho phép
+2026-02-25 17:08:05 [INFO] 🔄 [RETRY] Đẩy lại SĐT 84976958335 vào hàng đợi.
+2026-02-25 17:08:07 [WARNING] ⚠️ [FAIL] 84865332605 (Code 216): User không hợp lệ
+2026-02-25 17:08:07 [INFO] 🔄 [RETRY] Đẩy lại SĐT 84865332605 vào hàng đợi.
+2026-02-25 17:08:08 [WARNING] ⚠️ [FAIL] 84395271540 (Code 221): Vượt quá số request cho phép
+2026-02-25 17:08:08 [INFO] 🔄 [RETRY] Đẩy lại SĐT 84395271540 vào hàng đợi.
+2026-02-25 17:08:09 [WARNING] ⚠️ [FAIL] 84344668743 (Code 221): Vượt quá số request cho phép
+2026-02-25 17:08:09 [INFO] 🔄 [RETRY] Đẩy lại SĐT 84344668743 vào hàng đợi.
+2026-02-25 17:08:11 [WARNING] ⚠️ [FAIL] 84383333596 (Code 221): Vượt quá số request cho phép
+2026-02-25 17:08:11 [INFO] 🔄 [RETRY] Đẩy lại SĐT 84383333596 vào hàng đợi.
+2026-02-25 17:08:12 [WARNING] ⚠️ [FAIL] 84388978018 (Code 221): Vượt quá số request cho phép
+2026-02-25 17:08:12 [INFO] 🔄 [RETRY] Đẩy lại SĐT 84388978018 vào hàng đợi.
+2026-02-25 17:08:12 [WARNING] ⚠️ [FAIL] 84984624428 (Code 216): User không hợp lệ
+2026-02-25 17:08:12 [INFO] 🔄 [RETRY] Đẩy lại SĐT 84984624428 vào hàng đợi.
+2026-02-25 17:08:14 [WARNING] ⚠️ [FAIL] 84339131847 (Code 216): User không hợp lệ
+2026-02-25 17:08:14 [INFO] 🔄 [RETRY] Đẩy lại SĐT 84339131847 vào hàng đợi.
+2026-02-25 17:08:15 [WARNING] ⚠️ [FAIL] 84389218963 (Code 221): Vượt quá số request cho phép
+2026-02-25 17:08:15 [INFO] 🔄 [RETRY] Đẩy lại SĐT 84389218963 vào hàng đợi.
+2026-02-25 17:08:16 [WARNING] ⚠️ [FAIL] 84344248392 (Code 221): Vượt quá số request cho phép
+2026-02-25 17:08:16 [INFO] 🔄 [RETRY] Đẩy lại SĐT 84344248392 vào hàng đợi.
+2026-02-25 17:08:17 [WARNING] ⚠️ [FAIL] 84365117795 (Code 221): Vượt quá số request cho phép
+2026-02-25 17:08:17 [INFO] 🔄 [RETRY] Đẩy lại SĐT 84365117795 vào hàng đợi.
+2026-02-25 17:08:18 [WARNING] ⚠️ [FAIL] 84971613818 (Code 221): Vượt quá số request cho phép
+2026-02-25 17:08:18 [INFO] 🔄 [RETRY] Đẩy lại SĐT 84971613818 vào hàng đợi.
+2026-02-25 17:11:23 [INFO] [INIT] Đã load 1 tài khoản.
+2026-02-25 17:11:23 [INFO] [INIT] Đang kiểm tra các số đã hoàn thành từ results.ndjson...
+2026-02-25 17:11:23 [INFO] [INIT] Bỏ qua 26 số điện thoại đã quét trước đó.
+2026-02-25 17:11:23 [INFO] [INIT] Đang đọc file input: phone.txt...
+2026-02-25 17:11:23 [INFO] [INIT] Đã nạp 1584 số mới. Bỏ qua 0 số trùng.
+2026-02-25 17:11:23 [INFO] 🚀 Chạy 1 luồng với 1 tài khoản...
+2026-02-25 17:11:25 [WARNING] ⚠️ [FAIL] 84976958335 (Code 221): Vượt quá số request cho phép (Acc #0)
+2026-02-25 17:11:25 [WARNING] 🚫 [LIMIT] Account #0 tạm dừng 60 phút (đến 18:11:25).
