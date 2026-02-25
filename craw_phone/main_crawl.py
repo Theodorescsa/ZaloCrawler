@@ -195,8 +195,8 @@ class ZaloCrawler:
 
 if __name__ == "__main__":
     # Nếu bạn muốn delay 1 tiếng rồi mới chạy thật (như code cũ):
-    # logger.info("Chờ 1 tiếng theo yêu cầu...")
-    # time.sleep(3600)
+    logger.info("Chờ 1 tiếng theo yêu cầu...")
+    time.sleep(3600)
     
     crawler = ZaloCrawler()
     crawler.run()
