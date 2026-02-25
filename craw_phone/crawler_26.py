@@ -4,6 +4,7 @@ import time
 import random
 import csv
 import os
+import logging # Thêm thư viện logging
 from queue import Queue, Empty
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
@@ -23,6 +24,19 @@ OUTPUT_FILE = "results.ndjson"
 DEFAULT_COOLDOWN = 3600   # 1 tiếng khi bị lỗi nặng (312, -366)
 LIMIT_REQUESTS = 26       # Số lượng request THÀNH CÔNG tối đa trước khi nghỉ
 LIMIT_COOLDOWN = 3600     # Thời gian nghỉ sau khi đạt giới hạn (1 tiếng)
+LOG_FILE = "crawler.log"  # Tên file log
+
+# --- CẤU HÌNH LOGGING ---
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    handlers=[
+        logging.FileHandler(LOG_FILE, encoding='utf-8'), # Ghi ra file
+        logging.StreamHandler()                          # In ra màn hình console
+    ]
+)
+logger = logging.getLogger(__name__)
 
 class AccountWrapper:
     def __init__(self, acc_data, index):
@@ -46,7 +60,7 @@ class AccountManager:
     def load_accounts(self, filepath):
         try:
             if not os.path.exists(filepath):
-                print(f"[ERROR] File account '{filepath}' không tồn tại!")
+                logger.error(f"[ERROR] File account '{filepath}' không tồn tại!")
                 exit()
             
             with open(filepath, 'r', encoding='utf-8') as f:
@@ -54,9 +68,9 @@ class AccountManager:
             for idx, acc in enumerate(data):
                 wrapper = AccountWrapper(acc, idx)
                 self.active_queue.put(wrapper)
-            print(f"[INIT] Đã load {self.active_queue.qsize()} tài khoản.")
+            logger.info(f"[INIT] Đã load {self.active_queue.qsize()} tài khoản.")
         except Exception as e:
-            print(f"[ERROR] Lỗi đọc file account: {e}")
+            logger.error(f"[ERROR] Lỗi đọc file account: {e}")
             exit()
 
     def get_account(self):
@@ -77,7 +91,7 @@ class AccountManager:
                     acc = self.cooldown_list.pop(i)
                     acc.is_cooldown = False
                     acc.cooldown_until = None
-                    print(f"♻️ [RESTORE] Account #{acc.id} đã hết thời gian chờ.")
+                    logger.info(f"♻️ [RESTORE] Account #{acc.id} đã hết thời gian chờ.")
                     self.active_queue.put(acc)
 
             time.sleep(1)
@@ -91,7 +105,7 @@ class AccountManager:
             
             wait_min = int(cooldown_seconds / 60)
             resume_time = account.cooldown_until.strftime("%H:%M:%S")
-            print(f"🚫 [LIMIT] Account #{account.id} tạm dừng {wait_min} phút (đến {resume_time}).")
+            logger.warning(f"🚫 [LIMIT] Account #{account.id} tạm dừng {wait_min} phút (đến {resume_time}).")
         else:
             self.active_queue.put(account)
 
@@ -104,17 +118,17 @@ class ZaloCrawler:
 
     def load_phones(self):
         if not os.path.exists(INPUT_FILE):
-            print(f"[ERROR] File data '{INPUT_FILE}' không tồn tại!")
+            logger.error(f"[ERROR] File data '{INPUT_FILE}' không tồn tại!")
             return
 
-        print(f"[INIT] Đang đọc file input: {INPUT_FILE}...")
+        logger.info(f"[INIT] Đang đọc file input: {INPUT_FILE}...")
         count = 0
         try:
             if INPUT_FILE.lower().endswith('.csv'):
                 with open(INPUT_FILE, mode='r', encoding='utf-8-sig') as f:
                     reader = csv.DictReader(f)
                     if reader.fieldnames and 'mobile' not in reader.fieldnames:
-                        print(f"[ERROR] CSV thiếu cột 'mobile'.")
+                        logger.error(f"[ERROR] CSV thiếu cột 'mobile'.")
                         return
                     for row in reader:
                         p = row.get('mobile', '').strip()
@@ -128,9 +142,9 @@ class ZaloCrawler:
                         if p:
                             self.phone_queue.put(p)
                             count += 1
-            print(f"[INIT] Đã nạp {count} số điện thoại.")
+            logger.info(f"[INIT] Đã nạp {count} số điện thoại.")
         except Exception as e:
-            print(f"[ERROR] Lỗi đọc file data: {e}")
+            logger.error(f"[ERROR] Lỗi đọc file data: {e}")
 
     def save_ndjson(self, data):
         with self.file_lock:
@@ -162,12 +176,11 @@ class ZaloCrawler:
                 if isinstance(result, dict):
                     error_code = result.get("error_code", 0)
 
-                # TRƯỜNG HỢP 1: LỖI (Không tăng biến đếm, xử lý phạt thời gian nếu cần)
+                # TRƯỜNG HỢP 1: LỖI
                 if error_code != 0:
                     err_msg = result.get("error_message", "Unknown") if isinstance(result, dict) else str(result)
-                    print(f"⚠️ [FAIL] {phone} (Code {error_code}): {err_msg}")
+                    logger.warning(f"⚠️ [FAIL] {phone} (Code {error_code}): {err_msg}")
 
-                    # Xử lý các lỗi nặng cần nghỉ lâu
                     if error_code == 312:
                         expire_ts = result.get("data", {}).get("expireTs")
                         if expire_ts:
@@ -180,32 +193,27 @@ class ZaloCrawler:
                     elif error_code in [-366, -30]:
                         wait_seconds = DEFAULT_COOLDOWN
                     
-                    # Đẩy lại SĐT vào hàng đợi để acc khác làm
-                    print(f"🔄 [RETRY] Đẩy lại SĐT {phone} vào hàng đợi.")
+                    logger.info(f"🔄 [RETRY] Đẩy lại SĐT {phone} vào hàng đợi.")
                     self.phone_queue.put(phone)
 
-                # TRƯỜNG HỢP 2: THÀNH CÔNG (error_code == 0)
+                # TRƯỜNG HỢP 2: THÀNH CÔNG
                 else:
-                    # 1. Tăng biến đếm thành công
                     acc_wrapper.request_count += 1
                     
-                    # 2. Lưu dữ liệu
                     data_save = result.get("data", {})
                     data_save["_phone_input"] = phone 
                     self.save_ndjson(data_save)
-                    print(f"✅ [OK] {phone} -> {data_save.get('display_name', 'Unknown')} (Acc #{acc_wrapper.id} - {acc_wrapper.request_count}/{LIMIT_REQUESTS})")
+                    logger.info(f"✅ [OK] {phone} -> {data_save.get('display_name', 'Unknown')} (Acc #{acc_wrapper.id} - {acc_wrapper.request_count}/{LIMIT_REQUESTS})")
 
-                    # 3. Kiểm tra đã đủ 26 lần thành công chưa
                     if acc_wrapper.request_count >= LIMIT_REQUESTS:
-                        print(f"🛑 [MAX] Acc #{acc_wrapper.id} đã crawl thành công {LIMIT_REQUESTS} số. Nghỉ {LIMIT_COOLDOWN//60} phút.")
+                        logger.info(f"🛑 [MAX] Acc #{acc_wrapper.id} đã crawl thành công {LIMIT_REQUESTS} số. Nghỉ {LIMIT_COOLDOWN//60} phút.")
                         wait_seconds = LIMIT_COOLDOWN
-                        acc_wrapper.request_count = 0  # Reset biến đếm
+                        acc_wrapper.request_count = 0  
 
-                # Trả acc về manager (nếu wait_seconds > 0 thì sẽ bị cooldown)
                 self.manager.return_account(acc_wrapper, cooldown_seconds=wait_seconds)
 
             except Exception as e:
-                print(f"❌ [EXCEPTION] {e}")
+                logger.error(f"❌ [EXCEPTION] {e}")
                 self.manager.return_account(acc_wrapper, cooldown_seconds=0)
                 self.phone_queue.put(phone) 
 
@@ -215,20 +223,20 @@ class ZaloCrawler:
     def run(self):
         total_acc = self.manager.active_queue.qsize()
         if total_acc == 0:
-            print("❌ Không có tài khoản nào để chạy!")
+            logger.error("❌ Không có tài khoản nào để chạy!")
             return
 
         num_workers = min(total_acc, 20)
         
-        print(f"📊 Phát hiện {total_acc} tài khoản. Hệ thống sẽ chạy {num_workers} luồng.")
-        print("🚀 Bắt đầu chạy crawler...")
+        logger.info(f"📊 Phát hiện {total_acc} tài khoản. Hệ thống sẽ chạy {num_workers} luồng.")
+        logger.info("🚀 Bắt đầu chạy crawler...")
         
         with ThreadPoolExecutor(max_workers=num_workers) as executor:
             for _ in range(num_workers):
                 executor.submit(self.worker_task)
         
         self.phone_queue.join()
-        print("🏁 Đã xử lý xong toàn bộ danh sách.")
+        logger.info("🏁 Đã xử lý xong toàn bộ danh sách.")
 
 if __name__ == "__main__":
     crawler = ZaloCrawler()
