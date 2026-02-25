@@ -1,0 +1,52 @@
+2026-02-25 15:10:42 [INFO] [INIT] Đã load 1 tài khoản.
+2026-02-25 15:10:42 [INFO] [INIT] Đang đọc file input: phone.txt...
+2026-02-25 15:10:42 [INFO] [INIT] Đã nạp 1624 số điện thoại.
+2026-02-25 15:10:42 [INFO] 📊 Phát hiện 1 tài khoản. Hệ thống sẽ chạy 1 luồng.
+2026-02-25 15:10:42 [INFO] 🚀 Bắt đầu chạy crawler...
+2026-02-25 15:10:44 [WARNING] ⚠️ [FAIL] 84364165713 (Code 312): Tìm số điện thoại quá nhiều lần trong 1 giờ có thể bị xem là hoạt động bất thường.
+Bạn hãy thử lại vào 16:00.
+2026-02-25 15:10:44 [INFO] 🔄 [RETRY] Đẩy lại SĐT 84364165713 vào hàng đợi.
+2026-02-25 15:10:44 [WARNING] 🚫 [LIMIT] Account #0 tạm dừng 50 phút (đến 16:01:00).
+2026-02-25 16:01:00 [INFO] ♻️ [RESTORE] Account #0 đã hết thời gian chờ.
+2026-02-25 16:01:03 [INFO] ✅ [OK] 84376612868 -> Tổng Kho Nhựa Quang Minh (Acc #0 - 1/26)
+2026-02-25 16:01:05 [INFO] ✅ [OK] 84398544135 -> Le Quynh Anh (Acc #0 - 2/26)
+2026-02-25 16:01:06 [INFO] ✅ [OK] 84333792831 -> Khánh Ngọc (Acc #0 - 3/26)
+2026-02-25 16:01:07 [INFO] ✅ [OK] 84986345660 -> Đào Huy Bằng Công (Acc #0 - 4/26)
+2026-02-25 16:01:08 [INFO] ✅ [OK] 84987356266 -> Hoangbich (Acc #0 - 5/26)
+2026-02-25 16:01:10 [INFO] ✅ [OK] 84347845291 -> Trần Minh Biên (Acc #0 - 6/26)
+2026-02-25 16:01:11 [INFO] ✅ [OK] 84975581520 -> Nhung Nguyễn (Acc #0 - 7/26)
+2026-02-25 16:01:12 [INFO] ✅ [OK] 84388416230 -> Lê Thị Vui (Acc #0 - 8/26)
+2026-02-25 16:01:13 [INFO] ✅ [OK] 84398244631 -> Tòng Lải (Acc #0 - 9/26)
+2026-02-25 16:01:14 [INFO] ✅ [OK] 84968695311 -> Đỗ Sỹ Nhâm (Acc #0 - 10/26)
+2026-02-25 16:01:15 [INFO] ✅ [OK] 84961885095 -> Thành Hiền (Acc #0 - 11/26)
+2026-02-25 16:01:16 [INFO] ✅ [OK] 84359367538 -> Thanh Khắc (Acc #0 - 12/26)
+2026-02-25 16:01:18 [WARNING] ⚠️ [FAIL] 84985554737 (Code 216): User không hợp lệ
+2026-02-25 16:01:18 [INFO] 🔄 [RETRY] Đẩy lại SĐT 84985554737 vào hàng đợi.
+2026-02-25 16:01:20 [INFO] ✅ [OK] 84983745198 -> Hoàng Huynh (Acc #0 - 13/26)
+2026-02-25 16:01:21 [WARNING] ⚠️ [FAIL] 84867777118 (Code 216): User không hợp lệ
+2026-02-25 16:01:21 [INFO] 🔄 [RETRY] Đẩy lại SĐT 84867777118 vào hàng đợi.
+2026-02-25 16:01:23 [INFO] ✅ [OK] 84986925022 -> Nguyen Xuan Du (Acc #0 - 14/26)
+2026-02-25 16:01:24 [INFO] ✅ [OK] 84383039514 -> Hinh (Acc #0 - 15/26)
+2026-02-25 16:01:25 [INFO] ✅ [OK] 84365128132 -> Nông Thị Lời (Acc #0 - 16/26)
+2026-02-25 16:01:27 [INFO] ✅ [OK] 84965153451 -> Nguyễn Thanh Nam (Acc #0 - 17/26)
+2026-02-25 16:01:28 [INFO] ✅ [OK] 84382033880 -> Mai Văn An (Acc #0 - 18/26)
+2026-02-25 16:01:28 [WARNING] ⚠️ [FAIL] 84981180574 (Code 216): User không hợp lệ
+2026-02-25 16:01:28 [INFO] 🔄 [RETRY] Đẩy lại SĐT 84981180574 vào hàng đợi.
+2026-02-25 16:01:29 [INFO] ✅ [OK] 84868179236 -> Kim Khí Minh Châu (Acc #0 - 19/26)
+2026-02-25 16:01:30 [INFO] ✅ [OK] 84976262104 -> Nguyễn Đắc Duẩn (Acc #0 - 20/26)
+2026-02-25 16:01:31 [INFO] ✅ [OK] 84869276456 -> Vương Duyên (Acc #0 - 21/26)
+2026-02-25 16:01:32 [INFO] ✅ [OK] 84349719825 -> Ha kim (Acc #0 - 22/26)
+2026-02-25 16:01:33 [INFO] ✅ [OK] 84982545425 -> Thứ Nguyễn (Acc #0 - 23/26)
+2026-02-25 16:01:34 [WARNING] ⚠️ [FAIL] 84327400715 (Code 216): User không hợp lệ
+2026-02-25 16:01:34 [INFO] 🔄 [RETRY] Đẩy lại SĐT 84327400715 vào hàng đợi.
+2026-02-25 16:01:36 [WARNING] ⚠️ [FAIL] 84332849044 (Code 216): User không hợp lệ
+2026-02-25 16:01:36 [INFO] 🔄 [RETRY] Đẩy lại SĐT 84332849044 vào hàng đợi.
+2026-02-25 16:01:38 [INFO] ✅ [OK] 84384908400 -> Lưu Văn Thân (Acc #0 - 24/26)
+2026-02-25 16:01:39 [WARNING] ⚠️ [FAIL] 84392958504 (Code 216): User không hợp lệ
+2026-02-25 16:01:39 [INFO] 🔄 [RETRY] Đẩy lại SĐT 84392958504 vào hàng đợi.
+2026-02-25 16:01:40 [INFO] ✅ [OK] 84914198845 -> Nguyễn Thị Bắc (Acc #0 - 25/26)
+2026-02-25 16:01:42 [WARNING] ⚠️ [FAIL] 84981429903 (Code 212): Không tìm thấy
+2026-02-25 16:01:42 [INFO] 🔄 [RETRY] Đẩy lại SĐT 84981429903 vào hàng đợi.
+2026-02-25 16:01:44 [INFO] ✅ [OK] 84362077831 -> Diệu Linh (Acc #0 - 26/26)
+2026-02-25 16:01:44 [INFO] 🛑 [MAX] Acc #0 đã crawl thành công 26 số. Nghỉ 60 phút.
+2026-02-25 16:01:44 [WARNING] 🚫 [LIMIT] Account #0 tạm dừng 60 phút (đến 17:01:44).
