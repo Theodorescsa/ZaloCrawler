@@ -18,7 +18,7 @@ except ImportError:
     from zalo_client import ZaloClient
 
 # --- CẤU HÌNH ---
-INPUT_FILE = r"E:\NCS\zalo-crawler\craw_phone\phone.txt"
+INPUT_FILE = r"phone.txt"
 INPUT_ACCOUNTS = "accounts.json"
 OUTPUT_FILE = "results.ndjson"
 DEFAULT_COOLDOWN = 3600   # 1 tiếng khi bị lỗi nặng (312, -366)
